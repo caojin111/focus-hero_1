@@ -1,0 +1,652 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		031A56B32DBCEF060058A36B /* onboarding_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A56B22DBCEF060058A36B /* onboarding_music.mp3 */; };
+		031A56FD2DBCF43C0058A36B /* stinger.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A56FC2DBCF43C0058A36B /* stinger.mp3 */; };
+		031A57072DBD31070058A36B /* click.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A57062DBD31070058A36B /* click.mp3 */; };
+		037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A002DBBAB1D0014996A /* work_music.mp3 */; };
+		037E0A052DBBAB910014996A /* relax_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A042DBBAB910014996A /* relax_music.mp3 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		03A189AE2DBB100B0005287B /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			fileType = image.png;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# copypng\n";
+		};
+/* End PBXBuildRule section */
+
+/* Begin PBXContainerItemProxy section */
+		03A2AEBE2DB652B20085EA8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 03A2AEA72DB652B10085EA8D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03A2AEAE2DB652B10085EA8D;
+			remoteInfo = "office relax";
+		};
+		03A2AEC82DB652B20085EA8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 03A2AEA72DB652B10085EA8D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03A2AEAE2DB652B10085EA8D;
+			remoteInfo = "office relax";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		031A56B22DBCEF060058A36B /* onboarding_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = onboarding_music.mp3; sourceTree = "<group>"; };
+		031A56FC2DBCF43C0058A36B /* stinger.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = stinger.mp3; sourceTree = "<group>"; };
+		031A57062DBD31070058A36B /* click.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = click.mp3; sourceTree = "<group>"; };
+		037E0A002DBBAB1D0014996A /* work_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = work_music.mp3; sourceTree = "<group>"; };
+		037E0A042DBBAB910014996A /* relax_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = relax_music.mp3; sourceTree = "<group>"; };
+		03A2AEAF2DB652B10085EA8D /* office relax.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "office relax.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		03A2AEBD2DB652B20085EA8D /* office relaxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "office relaxTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		03A2AEC72DB652B20085EA8D /* office relaxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "office relaxUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		037E0A2B2DBBE1500014996A /* Exceptions for "office relax" folder in "office relax" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 03A2AEAE2DB652B10085EA8D /* office relax */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		03A2AEB12DB652B10085EA8D /* office relax */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				037E0A2B2DBBE1500014996A /* Exceptions for "office relax" folder in "office relax" target */,
+			);
+			path = "office relax";
+			sourceTree = "<group>";
+		};
+		03A2AEC02DB652B20085EA8D /* office relaxTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "office relaxTests";
+			sourceTree = "<group>";
+		};
+		03A2AECA2DB652B20085EA8D /* office relaxUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "office relaxUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		03A2AEAC2DB652B10085EA8D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		03A2AEBA2DB652B20085EA8D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		03A2AEC42DB652B20085EA8D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		03A2AEA62DB652B10085EA8D = {
+			isa = PBXGroup;
+			children = (
+				031A57062DBD31070058A36B /* click.mp3 */,
+				031A56FC2DBCF43C0058A36B /* stinger.mp3 */,
+				031A56B22DBCEF060058A36B /* onboarding_music.mp3 */,
+				037E0A042DBBAB910014996A /* relax_music.mp3 */,
+				037E0A002DBBAB1D0014996A /* work_music.mp3 */,
+				03A2AEB12DB652B10085EA8D /* office relax */,
+				03A2AEC02DB652B20085EA8D /* office relaxTests */,
+				03A2AECA2DB652B20085EA8D /* office relaxUITests */,
+				03A2AEB02DB652B10085EA8D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		03A2AEB02DB652B10085EA8D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				03A2AEAF2DB652B10085EA8D /* office relax.app */,
+				03A2AEBD2DB652B20085EA8D /* office relaxTests.xctest */,
+				03A2AEC72DB652B20085EA8D /* office relaxUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		03A2AEAE2DB652B10085EA8D /* office relax */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03A2AED12DB652B20085EA8D /* Build configuration list for PBXNativeTarget "office relax" */;
+			buildPhases = (
+				03A2AEAB2DB652B10085EA8D /* Sources */,
+				03A2AEAC2DB652B10085EA8D /* Frameworks */,
+				03A2AEAD2DB652B10085EA8D /* Resources */,
+			);
+			buildRules = (
+				03A189AE2DBB100B0005287B /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				03A2AEB12DB652B10085EA8D /* office relax */,
+			);
+			name = "office relax";
+			packageProductDependencies = (
+			);
+			productName = "office relax";
+			productReference = 03A2AEAF2DB652B10085EA8D /* office relax.app */;
+			productType = "com.apple.product-type.application";
+		};
+		03A2AEBC2DB652B20085EA8D /* office relaxTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03A2AED42DB652B20085EA8D /* Build configuration list for PBXNativeTarget "office relaxTests" */;
+			buildPhases = (
+				03A2AEB92DB652B20085EA8D /* Sources */,
+				03A2AEBA2DB652B20085EA8D /* Frameworks */,
+				03A2AEBB2DB652B20085EA8D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				03A2AEBF2DB652B20085EA8D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				03A2AEC02DB652B20085EA8D /* office relaxTests */,
+			);
+			name = "office relaxTests";
+			packageProductDependencies = (
+			);
+			productName = "office relaxTests";
+			productReference = 03A2AEBD2DB652B20085EA8D /* office relaxTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		03A2AEC62DB652B20085EA8D /* office relaxUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03A2AED72DB652B20085EA8D /* Build configuration list for PBXNativeTarget "office relaxUITests" */;
+			buildPhases = (
+				03A2AEC32DB652B20085EA8D /* Sources */,
+				03A2AEC42DB652B20085EA8D /* Frameworks */,
+				03A2AEC52DB652B20085EA8D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				03A2AEC92DB652B20085EA8D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				03A2AECA2DB652B20085EA8D /* office relaxUITests */,
+			);
+			name = "office relaxUITests";
+			packageProductDependencies = (
+			);
+			productName = "office relaxUITests";
+			productReference = 03A2AEC72DB652B20085EA8D /* office relaxUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		03A2AEA72DB652B10085EA8D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					03A2AEAE2DB652B10085EA8D = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					03A2AEBC2DB652B20085EA8D = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 03A2AEAE2DB652B10085EA8D;
+					};
+					03A2AEC62DB652B20085EA8D = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 03A2AEAE2DB652B10085EA8D;
+					};
+				};
+			};
+			buildConfigurationList = 03A2AEAA2DB652B10085EA8D /* Build configuration list for PBXProject "office relax" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = 03A2AEA62DB652B10085EA8D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 03A2AEB02DB652B10085EA8D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				03A2AEAE2DB652B10085EA8D /* office relax */,
+				03A2AEBC2DB652B20085EA8D /* office relaxTests */,
+				03A2AEC62DB652B20085EA8D /* office relaxUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		03A2AEAD2DB652B10085EA8D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				031A57072DBD31070058A36B /* click.mp3 in Resources */,
+				031A56B32DBCEF060058A36B /* onboarding_music.mp3 in Resources */,
+				037E0A052DBBAB910014996A /* relax_music.mp3 in Resources */,
+				037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */,
+				031A56FD2DBCF43C0058A36B /* stinger.mp3 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		03A2AEBB2DB652B20085EA8D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		03A2AEC52DB652B20085EA8D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		03A2AEAB2DB652B10085EA8D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		03A2AEB92DB652B20085EA8D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		03A2AEC32DB652B20085EA8D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		03A2AEBF2DB652B20085EA8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03A2AEAE2DB652B10085EA8D /* office relax */;
+			targetProxy = 03A2AEBE2DB652B20085EA8D /* PBXContainerItemProxy */;
+		};
+		03A2AEC92DB652B20085EA8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03A2AEAE2DB652B10085EA8D /* office relax */;
+			targetProxy = 03A2AEC82DB652B20085EA8D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		03A2AECF2DB652B20085EA8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		03A2AED02DB652B20085EA8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		03A2AED22DB652B20085EA8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "office relax/office_relax.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "office-relax-Info.plist";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relax";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.4;
+			};
+			name = Debug;
+		};
+		03A2AED32DB652B20085EA8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "office relax/office_relax.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "office-relax-Info.plist";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relax";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.4;
+			};
+			name = Release;
+		};
+		03A2AED52DB652B20085EA8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relaxTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/office relax.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/office relax";
+				XROS_DEPLOYMENT_TARGET = 2.4;
+			};
+			name = Debug;
+		};
+		03A2AED62DB652B20085EA8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relaxTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/office relax.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/office relax";
+				XROS_DEPLOYMENT_TARGET = 2.4;
+			};
+			name = Release;
+		};
+		03A2AED82DB652B20085EA8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relaxUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = "office relax";
+				XROS_DEPLOYMENT_TARGET = 2.4;
+			};
+			name = Debug;
+		};
+		03A2AED92DB652B20085EA8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKKYF3QVJ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MACOSX_DEPLOYMENT_TARGET = 15.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relaxUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = "office relax";
+				XROS_DEPLOYMENT_TARGET = 2.4;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		03A2AEAA2DB652B10085EA8D /* Build configuration list for PBXProject "office relax" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03A2AECF2DB652B20085EA8D /* Debug */,
+				03A2AED02DB652B20085EA8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		03A2AED12DB652B20085EA8D /* Build configuration list for PBXNativeTarget "office relax" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03A2AED22DB652B20085EA8D /* Debug */,
+				03A2AED32DB652B20085EA8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		03A2AED42DB652B20085EA8D /* Build configuration list for PBXNativeTarget "office relaxTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03A2AED52DB652B20085EA8D /* Debug */,
+				03A2AED62DB652B20085EA8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		03A2AED72DB652B20085EA8D /* Build configuration list for PBXNativeTarget "office relaxUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03A2AED82DB652B20085EA8D /* Debug */,
+				03A2AED92DB652B20085EA8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 03A2AEA72DB652B10085EA8D /* Project object */;
+}

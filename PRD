@@ -1,0 +1,292 @@
+懒猫摸鱼(Lazycat-Office relax) - iOS开发文档
+1. 应用概述
+中文名：懒猫摸鱼
+英文名：Lazycat-Office relax
+目标用户：25~35岁办公室上班族
+应用定位：融合游戏元素的健康类应用
+主要目标：帮助用户放松身心，缓解压力，同时达到锻炼身体的目的
+屏幕方向：竖屏设计
+视觉风格：像素风格，简洁扁平
+
+
+2. 技术规格
+开发平台：iOS 14.0+
+开发语言：Swift 5.0+
+UI框架：SwiftUI/UIKit
+数据存储：Core Data/URLSession
+第三方依赖：
+动画库：Lottie
+音频处理：AVFoundation
+本地通知：UserNotifications
+网络请求：URLSession
+
+
+3. 功能模块
+3.1 启动流程(Onboarding)
+3.1.1 开屏界面(SplashViewController)
+展示内容：应用logo、应用名称、开发者信息("Made with LazyCat")
+停留时间：2秒
+过渡动画：淡入淡出
+跳转：首次启动跳转至问卷调查，非首次启动跳转至主功能界面
+3.1.2 用户调查问卷(UserSurveyViewController)
+实现方式：UIPageViewController，共5页
+页面1(AgeQuestionViewController)
+问题："您的年龄是？"
+控件：UIPickerView(年龄选择器)
+默认值：25岁
+数据范围：18-60岁
+页面2(GenderQuestionViewController)
+问题："您的性别是？"
+控件：UISegmentedControl
+选项：男、女、非二元性别
+
+
+页面3(JobQuestionViewController)
+问题："您的工作类型是？"
+控件：UITableView(单选)
+选项：艺术设计工作者、程序开发者、体力劳动者、销售者、公务员
+页面4(ExerciseQuestionViewController)
+问题："您的身体活动强度为？"
+控件：UISegmentedControl
+选项：从不运动、偶尔运动、经常运动
+页面5(CatNameQuestionViewController)
+问题："您希望您的懒猫叫什么名字？"
+控件：UITextField
+限制：最多10个字符，支持中英文输入
+验证：输入为空时不可进入下一步
+
+
+3.2 主功能界面(MainViewController)
+3.2.1 工作模式(WorkModeViewController)
+核心元素：
+背景：办公室场景
+猫咪动画：工作状态Idle动画(CAAnimation或Lottie)
+专注倒计时：UILabel + NSTimer
+金币奖励预览：UILabel
+交互：
+开始/暂停按钮：UIButton
+工作时长：根据Onboarding阶段用户所填的年龄、性别、工作类型、身体活动强度决定
+结束时触发本地通知(UNUserNotificationCenter)
+
+【时长算法】
+func calculateWorkDuration(age: Int, gender: String, jobType: String, exerciseLevel: String) -> Int {
+    // 基础时长（分钟）
+    var baseDuration = 25
+    
+    // 根据年龄调整
+    if age < 25 {
+        baseDuration -= 2
+    } else if age > 35 {
+        baseDuration += 3
+    }
+    
+    // 根据工作类型调整
+    switch jobType {
+    case "程序开发者":
+        baseDuration += 5
+    case "艺术设计工作者":
+        baseDuration += 3
+    case "体力劳动者":
+        baseDuration -= 5
+    default:
+        break
+    }
+    
+    // 根据运动强度调整
+    switch exerciseLevel {
+    case "从不运动":
+        baseDuration -= 3
+    case "经常运动":
+        baseDuration += 2
+    default:
+        break
+    }
+    
+    // 确保时长在合理范围内
+    return min(max(baseDuration, 15), 45)
+}
+
+func calculateRelaxDuration(workDuration: Int) -> Int {
+    // 休息时间为工作时间的1/5到1/4
+    return workDuration / 4
+}
+3.2.2 休息模式(RelaxModeViewController)
+核心元素：
+背景：公园/野外场景
+猫咪动画：休息状态动画
+商店按钮：UIButton
+衣柜按钮：UIButton
+休息时长：根据工作时长算法自动计算
+
+3.2.3 商店界面(StoreViewController)
+实现方式：UICollectionView或UITableView
+数据模型：StoreItem(商品名称、描述、价格、图片、类型)
+显示内容：
+用户金币余额(UILabel)
+商品列表(UICollectionViewCell)
+购买按钮(每个商品项内)
+交互：
+购买确认弹窗(UIAlertController)
+购买成功/失败反馈(自定义Toast或HUD)
+
+3.2.4 衣柜界面(WardrobeViewController)
+实现方式：UICollectionView
+数据模型：WardrobeItem(商品ID、名称、图片、是否已购买、是否已装备)
+显示内容：
+已购买商品列表
+当前装备状态标识
+猫咪预览区域
+交互：
+穿戴/取消穿戴按钮
+实时预览效果
+
+3.3 设置界面(SettingsViewController)
+访问方式：主界面常驻设置按钮
+实现方式：UITableView
+设置项：
+背景音乐(UISwitch + UISlider)
+开关状态保存键：settings_bgm_enabled
+音量值保存键：settings_bgm_volume
+音量范围：0.0-1.0
+音效(UISwitch + UISlider)
+开关状态保存键：settings_sound_enabled
+音量值保存键：settings_sound_volume
+音量范围：0.0-1.0
+震动(UISwitch)
+开关状态保存键：settings_vibration_enabled
+实现：UIImpactFeedbackGenerator
+
+4. 数据持久化
+4.1 用户信息(UserDataManager)
+存储方式：UserDefaults
+数据结构：
+
+struct UserProfile {
+    var age: Int                  // 年龄
+    var gender: String            // 性别
+    var jobType: String           // 工作类型
+    var exerciseLevel: String     // 运动强度
+    var catName: String           // 猫咪名称
+    var coins: Int                // 金币数量
+    var onboardingCompleted: Bool // 是否完成引导
+    var recommendedWorkDuration: Int // 推荐工作时长（分钟）
+    var recommendedRelaxDuration: Int // 推荐休息时长（分钟）
+}
+4.2 商品与装备(ItemManager)
+存储方式：Core Data
+实体设计：
+Item(商品基本信息)
+Inventory(用户拥有的商品)
+Equipped(当前装备的商品)
+
+5. 资源管理
+5.1 云资源存储(CloudResourceManager)
+存储平台：GitHub Pages
+基础URL：https://[username].github.io/lazycat-resources/
+资源命名规则：按类型分目录，采用语义化命名
+资源加载模式：按需加载，首次加载后缓存到本地
+
+class CloudResourceManager {
+    // 云资源基础URL
+    let baseUrl = "https://[username].github.io/lazycat-resources"
+    
+    // 资源类型枚举
+    enum ResourceType {
+        case audio
+        case animation
+        case image
+        
+        var path: String {
+            switch self {
+            case .audio: return "audio"
+            case .animation: return "animations"
+            case .image: return "images"
+            }
+        }
+    }
+    
+    // 获取资源URL
+    func getResourceUrl(type: ResourceType, name: String) -> URL {
+        return URL(string: "\(baseUrl)/\(type.path)/\(name)")!
+    }
+    
+    // 加载资源
+    func loadResource(type: ResourceType, name: String, completion: @escaping (Data?, Error?) -> Void) {
+        // 检查本地缓存
+        if let cachedData = checkCache(type: type, name: name) {
+            completion(cachedData, nil)
+            return
+        }
+        
+        // 从云端加载
+        let url = getResourceUrl(type: type, name: name)
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                // 保存到缓存
+                self.saveToCache(type: type, name: name, data: data)
+            }
+            completion(data, error)
+        }.resume()
+    }
+    
+    // 检查本地缓存
+    private func checkCache(type: ResourceType, name: String) -> Data? {
+        // 实现本地缓存检查逻辑
+        return nil
+    }
+    
+    // 保存到本地缓存
+    private func saveToCache(type: ResourceType, name: String, data: Data) {
+        // 实现缓存保存逻辑
+    }
+}
+
+5.2 音频资源
+资源路径：`audio/`
+背景音乐：
+- work_bgm.mp3 (工作模式背景音乐)
+- relax_bgm.mp3 (休息模式背景音乐)
+
+音效：
+- button_click.mp3 (按钮点击)
+- work_complete.mp3 (工作完成)
+- coin_earned.mp3 (获得金币)
+- item_purchased.mp3 (购买物品)
+
+5.3 动画资源
+资源路径：`animations/`
+猫咪动画：
+- cat_work_idle.json (工作状态待机)
+- cat_relax_idle.json (休息状态待机)
+
+5.4 图片资源
+资源路径：`images/`
+分类储存：
+- UI元素：`ui/`
+- 背景：`backgrounds/`
+- 商品：`items/`
+
+6. 通知机制
+本地通知：
+- 工作完成通知
+- 休息提醒通知
+- 每日签到提醒
+
+7. 测试要点
+用户引导流程完整性测试
+不同iOS版本兼容性测试
+动画性能测试
+持久化数据稳定性测试
+音频播放与控制测试
+震动反馈效果测试
+网络资源加载测试与弱网络环境测试
+资源缓存机制测试
+
+8. 上线准备
+App Store审核要点：
+- 隐私政策
+- App Store截图
+- 应用描述
+- 关键词优化
+网络资源部署检查
+CDN配置检查
