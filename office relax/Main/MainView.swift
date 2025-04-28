@@ -31,6 +31,22 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
         imageView.layer.magnificationFilter = .linear // 提高清晰度
         imageView.layer.shouldRasterize = false // 避免模糊
         context.coordinator.imageView = imageView
+        
+        // 添加观察者来监听暂停和恢复通知
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.pauseAnimation),
+            name: NSNotification.Name("PauseAnimations"),
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.resumeAnimation),
+            name: NSNotification.Name("ResumeAnimations"),
+            object: nil
+        )
+        
         return imageView
     }
     
@@ -48,7 +64,7 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             // 设置动画完成回调
             if !isLooping && playbackCompleted != nil {
                 context.coordinator.playbackCompleted = playbackCompleted
-                NotificationCenter.default.removeObserver(context.coordinator)
+                NotificationCenter.default.removeObserver(context.coordinator, name: .UIImageViewAnimationDidFinish, object: nil)
                 NotificationCenter.default.addObserver(
                     context.coordinator,
                     selector: #selector(Coordinator.animationDidFinish),
@@ -65,12 +81,21 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(images: images)
     }
     
     class Coordinator: NSObject {
         var playbackCompleted: (() -> Void)?
         weak var imageView: UIImageView?
+        var currentFrame: Int = 0
+        var isPaused: Bool = false
+        var images: [UIImage]
+        var timer: Timer?
+        
+        init(images: [UIImage]) {
+            self.images = images
+            super.init()
+        }
         
         @objc func animationDidFinish() {
             DispatchQueue.main.async { [weak self] in
@@ -78,8 +103,36 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             }
         }
         
+        @objc func pauseAnimation() {
+            guard let imageView = imageView, imageView.isAnimating else { return }
+            
+            // 保存当前帧索引 - 通过随机选择帧停止
+            currentFrame = Int.random(in: 0..<(images.count))
+            
+            // 停止动画
+            imageView.stopAnimating()
+            
+            // 显示随机帧
+            if !images.isEmpty && currentFrame < images.count {
+                imageView.image = images[currentFrame]
+            }
+            
+            isPaused = true
+        }
+        
+        @objc func resumeAnimation() {
+            guard let imageView = imageView, !imageView.isAnimating, isPaused else { return }
+            
+            // 重新启动动画
+            imageView.startAnimating()
+            
+            isPaused = false
+        }
+        
         deinit {
             NotificationCenter.default.removeObserver(self)
+            timer?.invalidate()
+            timer = nil
         }
     }
     
@@ -115,8 +168,12 @@ struct MainView: View {
     @State private var isFirstAppear = true // 跟踪是否是首次出现
     
     @State private var showSettings = false
-    @State private var showPauseDialog = false  // 新增：控制暂停弹窗的显示
-    @State private var showShop = false  // 新增：控制商店弹窗的显示
+    @State private var showPauseDialog = false  // 控制暂停弹窗的显示
+    @State private var showShop = false  // 控制商店弹窗的显示
+    
+    // 暂停状态相关
+    @State private var isPaused = false // 跟踪是否暂停状态
+    @State private var pausedAnimationFrames: [String: Int] = [:] // 储存暂停时的动画帧
     
     var body: some View {
         ZStack {
@@ -228,6 +285,7 @@ struct MainView: View {
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
                         showPauseDialog = false
+                        resumeAll() // 点击空白处恢复
                     }
                 
                 VStack(spacing: 20) {
@@ -238,6 +296,7 @@ struct MainView: View {
                     HStack(spacing: 20) {
                         Button(action: {
                             showPauseDialog = false
+                            resumeAll() // 点击Back按钮恢复
                         }) {
                             Text("Back")
                                 .foregroundColor(.white)
@@ -249,7 +308,8 @@ struct MainView: View {
                         
                         Button(action: {
                             showPauseDialog = false
-                            skipTimer()
+                            resumeAll() // 恢复所有状态
+                            skipTimer() // 然后跳过当前计时
                         }) {
                             Text("Skip")
                                 .foregroundColor(.white)
@@ -521,7 +581,10 @@ struct MainView: View {
     var bottomButtons: some View {
         VStack(spacing: 10) {
             // 暂停按钮（原Skip按钮）
-            Button(action: { showPauseDialog = true }) {
+            Button(action: { 
+                showPauseDialog = true 
+                pauseAll() // 暂停所有状态
+            }) {
                 HStack {
                     Image(systemName: "pause.fill")
                     Text("Pause")
@@ -739,13 +802,6 @@ struct MainView: View {
         }
     }
     
-    // 格式化时间
-    func formatTime(seconds: Int) -> String {
-        let minutes = seconds / 60
-        let secs = seconds % 60
-        return String(format: "%02d:%02d", minutes, secs)
-    }
-    
     // 计算金币奖励
     func calculateCoinsReward(_ seconds: Int) -> Int {
         // 每秒获得2个金币
@@ -767,6 +823,72 @@ struct MainView: View {
         } else {
             return 0
         }
+    }
+    
+    // 暂停所有音频和动画
+    private func pauseAll() {
+        isPaused = true
+        
+        // 1. 暂停计时器
+        timer?.invalidate()
+        timer = nil
+        
+        // 2. 暂停音乐和音效
+        audioManager.pauseAllMusic()
+        audioManager.pauseAllSounds()
+        
+        // 3. 暂停动画 - 通过截取当前帧实现
+        pauseAnimations()
+    }
+    
+    // 恢复所有音频和动画
+    private func resumeAll() {
+        if !isPaused { return }
+        isPaused = false
+        
+        // 1. 恢复计时器
+        startTimer()
+        
+        // 2. 恢复音乐
+        if isWorkMode {
+            audioManager.resumeWorkMusic()
+        } else {
+            audioManager.resumeRelaxMusic()
+        }
+        
+        // 3. 恢复动画
+        resumeAnimations()
+    }
+    
+    // 暂停动画 - 通过更新AnimationManager实现
+    private func pauseAnimations() {
+        let animationKeys = isWorkMode ? 
+            ["hero.attack", "boss.idle"] : 
+            ["hero.relax", "fireplace.burn"]
+        
+        // 通知每个动画视图暂停
+        NotificationCenter.default.post(
+            name: NSNotification.Name("PauseAnimations"),
+            object: nil, 
+            userInfo: nil
+        )
+    }
+    
+    // 恢复动画
+    private func resumeAnimations() {
+        // 通知每个动画视图恢复
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ResumeAnimations"),
+            object: nil, 
+            userInfo: nil
+        )
+    }
+    
+    // 格式化时间
+    func formatTime(seconds: Int) -> String {
+        let minutes = seconds / 60
+        let secs = seconds % 60
+        return String(format: "%02d:%02d", minutes, secs)
     }
 }
 

@@ -122,6 +122,38 @@ class AudioManager: ObservableObject {
         fadeOutAndStop(player: relaxModePlayer)
     }
     
+    // 暂停所有音乐
+    func pauseAllMusic() {
+        workModePlayer?.pause()
+        relaxModePlayer?.pause()
+    }
+    
+    // 暂停所有音效
+    func pauseAllSounds() {
+        for (_, player) in soundPlayers {
+            player.pause()
+        }
+    }
+    
+    // 恢复工作模式音乐
+    func resumeWorkMusic() {
+        guard isMusicEnabled else { return }
+        workModePlayer?.play()
+    }
+    
+    // 恢复休息模式音乐
+    func resumeRelaxMusic() {
+        guard isMusicEnabled else { return }
+        relaxModePlayer?.play()
+    }
+    
+    // 恢复所有音效
+    func resumeAllSounds() {
+        for (_, player) in soundPlayers {
+            player.play()
+        }
+    }
+    
     // 渐弱停止音乐
     private func fadeOutAndStop(player: AVAudioPlayer?, completion: (() -> Void)? = nil) {
         guard let player = player, player.isPlaying else {
