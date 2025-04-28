@@ -64,6 +64,22 @@
         "type": "background"
     },
     {
+        "id": "bubble_1",
+        "name": "可爱气泡",
+        "description": "萌萌哒的可爱气泡效果。",
+        "price": 120,
+        "imageName": "bubble_cute",
+        "type": "bubble"
+    },
+    {
+        "id": "bubble_2",
+        "name": "炫彩气泡",
+        "description": "五彩缤纷的炫彩气泡效果。",
+        "price": 150,
+        "imageName": "bubble_colorful",
+        "type": "bubble"
+    },
+    {
         "id": "premium_1",
         "name": "豪华礼包",
         "description": "包含所有特效和音效的豪华礼包。",

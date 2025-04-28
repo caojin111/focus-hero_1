@@ -157,6 +157,11 @@ class ShopManager: ObservableObject {
                 purchasedItems[index].isEquipped = true
                 equippedBackground = purchasedItems[index]
             }
+        case .bubble:
+            // 气泡类型的装备逻辑
+            if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
+                purchasedItems[index].isEquipped = true
+            }
         case .premium:
             // 处理付费道具的装备逻辑
             break
@@ -180,6 +185,8 @@ class ShopManager: ObservableObject {
             equippedBGM = nil
         case .background:
             equippedBackground = nil
+        case .bubble:
+            break
         case .premium:
             break
         }
@@ -206,6 +213,8 @@ class ShopManager: ObservableObject {
             return equippedBGM.map { [$0] } ?? []
         case .background:
             return equippedBackground.map { [$0] } ?? []
+        case .bubble:
+            return []
         case .premium:
             return []
         }

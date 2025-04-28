@@ -16,6 +16,7 @@ struct ShopItem: Identifiable, Codable, Equatable {
         case bgm = "bgm"           // 背景音乐
         case background = "background" // 背景图
         case premium = "premium"    // 付费道具
+        case bubble = "bubble"      // 气泡
     }
     
     static func == (lhs: ShopItem, rhs: ShopItem) -> Bool {

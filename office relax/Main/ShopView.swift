@@ -221,6 +221,8 @@ struct ShopView: View {
             return "背景"
         case .premium:
             return "付费"
+        case .bubble:
+            return "气泡"
         }
     }
 }
@@ -343,6 +345,8 @@ struct ShopItemCard: View {
             return "photo"
         case .premium:
             return "star.fill"
+        case .bubble:
+            return "bubble.left"
         }
     }
 }
