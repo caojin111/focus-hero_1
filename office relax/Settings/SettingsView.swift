@@ -24,12 +24,12 @@ struct SettingsView: View {
         NavigationView {
             Form {
                 // 时间设置部分
-                Section(header: Text("时间设置")) {
+                Section(header: Text("Time setting")) {
                     VStack(alignment: .leading) {
                         HStack {
-                            Text("工作时长")
+                            Text("Work duration")
                             Spacer()
-                            Text("\(Int(workDuration)) 分钟")
+                            Text("\(Int(workDuration)) minutes")
                                 .foregroundColor(.gray)
                         }
                         Slider(value: $workDuration, in: 15...60, step: 1)
@@ -40,9 +40,9 @@ struct SettingsView: View {
                     
                     VStack(alignment: .leading) {
                         HStack {
-                            Text("休息时长")
+                            Text("Relax duration")
                             Spacer()
-                            Text("\(Int(relaxDuration)) 分钟")
+                            Text("\(Int(relaxDuration)) minutes")
                                 .foregroundColor(.gray)
                         }
                         Slider(value: $relaxDuration, in: 5...30, step: 1)
@@ -52,8 +52,8 @@ struct SettingsView: View {
                     }
                 }
                 
-                Section(header: Text("背景音乐")) {
-                    Toggle("启用背景音乐", isOn: $audioManager.isMusicEnabled)
+                Section(header: Text("BGM")) {
+                    Toggle("Enable BGM", isOn: $audioManager.isMusicEnabled)
                     
                     if audioManager.isMusicEnabled {
                         HStack {
@@ -66,8 +66,8 @@ struct SettingsView: View {
                     }
                 }
                 
-                Section(header: Text("音效")) {
-                    Toggle("启用音效", isOn: $soundEnabled)
+                Section(header: Text("Sound")) {
+                    Toggle("Enable sound", isOn: $soundEnabled)
                     
                     if soundEnabled {
                         HStack {
@@ -80,37 +80,37 @@ struct SettingsView: View {
                     }
                 }
                 
-                Section(header: Text("震动")) {
-                    Toggle("启用震动", isOn: $vibrationEnabled)
+                Section(header: Text("Vibration")) {
+                    Toggle("Enable vibration", isOn: $vibrationEnabled)
                 }
                 
-                Section(header: Text("关于")) {
+                Section(header: Text("About")) {
                     HStack {
-                        Text("版本")
+                        Text("Version")
                         Spacer()
                         Text("1.0.0")
                             .foregroundColor(.gray)
                     }
                     
                     HStack {
-                        Text("开发者")
+                        Text("Developer")
                         Spacer()
                         Text("LazyCat")
                             .foregroundColor(.gray)
                     }
                 }
             }
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
             .toolbar {
                 #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") {
+                    Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
                 #else
                 ToolbarItem(placement: .automatic) {
-                    Button("完成") {
+                    Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

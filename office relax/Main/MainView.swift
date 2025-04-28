@@ -175,6 +175,14 @@ struct MainView: View {
     @State private var isPaused = false // 跟踪是否暂停状态
     @State private var pausedAnimationFrames: [String: Int] = [:] // 储存暂停时的动画帧
     
+    // 倒计时区域控制变量
+    @State private var timerOffsetX: CGFloat = 0
+    @State private var timerOffsetY: CGFloat = 0
+    @State private var timerScale: CGFloat = 1.0
+    
+    // 添加震动生成器
+    private let feedbackGenerator = UINotificationFeedbackGenerator()
+    
     var body: some View {
         ZStack {
             // 背景
@@ -185,8 +193,10 @@ struct MainView: View {
                 HStack {
                     // 金币余额
                     HStack(spacing: 2) {
-                        Image(systemName: "dollarsign.circle.fill")
-                            .foregroundColor(.yellow)
+                        Image("coin")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                         Text("\(userDataManager.userProfile.coins)")
                             .foregroundColor(.black)
                             .fontWeight(.bold)
@@ -198,7 +208,7 @@ struct MainView: View {
                     
                     Spacer()
                     
-                    // 计时器显示 - 移到上方
+                    // 计时器显示 - 添加偏移和缩放控制
                     Text(formatTime(seconds: remainingSeconds))
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
@@ -206,17 +216,21 @@ struct MainView: View {
                         .padding(.horizontal, 12)
                         .background(Color.black.opacity(0.5))
                         .cornerRadius(10)
+                        .offset(x: timerOffsetX, y: timerOffsetY)
+                        .scaleEffect(timerScale)
                     
                     Spacer()
                     
-                    // 设置按钮 - 保持在右上角
-                    Button(action: { showSettings = true }) {
-                        Image(systemName: "gearshape")
-                            .font(.title3)
-                            .padding(8)
-                            .background(Color.white.opacity(0.8))
-                            .clipShape(Circle())
-                            .foregroundColor(.black)
+                    // 设置按钮
+                    Button(action: {
+                        audioManager.playSound("click")
+                        showSettings = true
+                    }) {
+                        Image("settings")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(.top, 50)  // 增加顶部间距，避开状态栏
@@ -241,11 +255,13 @@ struct MainView: View {
                     // 金币奖励预览（仅工作模式显示）
                     if isWorkMode {
                         HStack {
-                            Text("当前奖励:")
+                            Text("You will get:")
                                 .foregroundColor(.black)
                                 .font(.subheadline)
-                            Image(systemName: "dollarsign.circle.fill")
-                                .foregroundColor(.yellow)
+                            Image("coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
                             Text("\(previewCoinsReward())")
                                 .foregroundColor(.black)
                                 .fontWeight(.bold)
@@ -289,7 +305,7 @@ struct MainView: View {
                     }
                 
                 VStack(spacing: 20) {
-                    Text("您想要做什么样的操作？")
+                    Text("What do you want to do?")
                         .font(.headline)
                         .foregroundColor(.white)
                     
@@ -328,6 +344,8 @@ struct MainView: View {
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onAppear {
+            setTimerPosition(x: -3, y: 50)  // 设置倒计时区域向右偏移100点，向下偏移50点
+            setTimerScale(2.5)  // 设置倒计时区域缩放为1.5倍
             setupTimer()
             // 初始化入场动画状态
             isHeroEntryCompleted = false
@@ -604,7 +622,7 @@ struct MainView: View {
                     VStack(spacing: 3) {
                         Image(systemName: "cart")
                             .font(.title3)
-                        Text("商店")
+                        Text("shop")
                             .font(.caption)
                     }
                     .foregroundColor(.black)
@@ -685,6 +703,9 @@ struct MainView: View {
     
     // 计时器完成处理
     func timerCompleted() {
+        // 触发震动
+        feedbackGenerator.notificationOccurred(.success)
+        
         if isWorkMode {
             // 获取当前时间，计算自开始以来的总时间
             let currentDate = Date()
@@ -769,6 +790,9 @@ struct MainView: View {
     
     // 跳过当前计时，直接进入下一阶段
     func skipTimer() {
+        // 触发震动
+        feedbackGenerator.notificationOccurred(.warning)
+        
         if isWorkMode {
             // 获取实际时间流逝
             let currentDate = Date()
@@ -827,6 +851,9 @@ struct MainView: View {
     
     // 暂停所有音频和动画
     private func pauseAll() {
+        // 触发震动
+        feedbackGenerator.notificationOccurred(.warning)
+        
         isPaused = true
         
         // 1. 暂停计时器
@@ -844,6 +871,9 @@ struct MainView: View {
     // 恢复所有音频和动画
     private func resumeAll() {
         if !isPaused { return }
+        // 触发震动
+        feedbackGenerator.notificationOccurred(.success)
+        
         isPaused = false
         
         // 1. 恢复计时器
@@ -889,6 +919,24 @@ struct MainView: View {
         let minutes = seconds / 60
         let secs = seconds % 60
         return String(format: "%02d:%02d", minutes, secs)
+    }
+    
+    // 设置倒计时区域位置
+    func setTimerPosition(x: CGFloat, y: CGFloat) {
+        timerOffsetX = x
+        timerOffsetY = y
+    }
+    
+    // 设置倒计时区域缩放
+    func setTimerScale(_ scale: CGFloat) {
+        timerScale = scale
+    }
+    
+    // 重置倒计时区域位置和大小
+    func resetTimerPosition() {
+        timerOffsetX = 0
+        timerOffsetY = 0
+        timerScale = 1
     }
 }
 

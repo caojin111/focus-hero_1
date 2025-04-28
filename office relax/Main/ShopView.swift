@@ -44,9 +44,10 @@ struct ShopView: View {
                     
                     // 金币显示
                     HStack(spacing: 8) {
-                        Image(systemName: "dollarsign.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.yellow)
+                        Image("coin")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                         Text("\(userDataManager.userProfile.coins)")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
@@ -297,8 +298,10 @@ struct ShopItemCard: View {
                         } else {
                             // 价格和购买按钮
                             HStack(spacing: 4) {
-                                Image(systemName: "dollarsign.circle.fill")
-                                    .foregroundColor(.yellow)
+                                Image("coin")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
                                 Text("\(item.price)")
                                     .font(.system(size: 12, weight: .bold))
                                     .foregroundColor(.white)
