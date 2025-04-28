@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 struct SplashView: View {
     @State private var isActive = false
     @AppStorage("onboardingCompleted") private var onboardingCompleted = false
     @State private var titleOpacity = 0.0
     @State private var titleScale = 0.8
+    @State private var audioPlayer: AVAudioPlayer?
     
     var body: some View {
         ZStack {
@@ -45,6 +47,9 @@ struct SplashView: View {
             .padding()
         }
         .onAppear {
+            // 播放音效
+            playStingerSound()
+            
             // 标题动画效果
             withAnimation(.easeOut(duration: 1.0)) {
                 titleOpacity = 1.0
@@ -75,6 +80,24 @@ struct SplashView: View {
             }
         }
         #endif
+    }
+    
+    // 播放stinger音效
+    private func playStingerSound() {
+        guard let path = Bundle.main.path(forResource: "stinger", ofType: "mp3") else {
+            print("无法找到stinger音效文件")
+            return
+        }
+        
+        let url = URL(fileURLWithPath: path)
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.volume = 0.8 // 设置音量
+            audioPlayer?.play()
+        } catch {
+            print("播放stinger音效时出错: \(error.localizedDescription)")
+        }
     }
 }
 

@@ -58,6 +58,9 @@ struct OnboardingView: View {
                         .clipped()
                         .edgesIgnoringSafeArea(.all)
                         .transition(.opacity)
+                        .onAppear {
+                            playStingerSound()
+                        }
                 } else {
                     Image("Splash_bg_2")
                         .resizable()
@@ -67,6 +70,9 @@ struct OnboardingView: View {
                         .clipped()
                         .edgesIgnoringSafeArea(.all)
                         .transition(.opacity)
+                        .onAppear {
+                            playStingerSound()
+                        }
                 }
             } else {
                 // 完成页面背景
@@ -78,6 +84,9 @@ struct OnboardingView: View {
                     .clipped()
                     .edgesIgnoringSafeArea(.all)
                     .transition(.opacity)
+                    .onAppear {
+                        playStingerSound()
+                    }
             }
             
             // 内容层
