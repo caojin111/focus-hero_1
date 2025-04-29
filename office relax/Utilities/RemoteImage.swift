@@ -203,7 +203,8 @@ struct LocalImage: View {
         if let image = UIImage(named: name) {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
+                .clipped()
         } else {
             Image(systemName: placeholder)
                 .resizable()

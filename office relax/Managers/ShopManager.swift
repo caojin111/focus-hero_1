@@ -168,6 +168,11 @@ class ShopManager: ObservableObject {
                         AnimationManager.shared.reloadConfigurationAndRefresh()
                         _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                     }
+                    // 如果是effect_2，重新加载动画配置并预加载动画
+                    else if itemId == "effect_2" {
+                        AnimationManager.shared.reloadConfigurationAndRefresh()
+                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                    }
                 }
                 
                 // 同步装备状态到shopItems
@@ -263,6 +268,10 @@ class ShopManager: ObservableObject {
                 
                 // 如果是effect_1，重新加载动画配置
                 if itemId == "effect_1" {
+                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                }
+                // 如果是effect_2，重新加载动画配置
+                else if itemId == "effect_2" {
                     AnimationManager.shared.reloadConfigurationAndRefresh()
                 }
                 

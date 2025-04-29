@@ -64,13 +64,13 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             // 设置动画完成回调
             if !isLooping && playbackCompleted != nil {
                 context.coordinator.playbackCompleted = playbackCompleted
+                
+                // 移除旧的观察者以避免重复
                 NotificationCenter.default.removeObserver(context.coordinator, name: .UIImageViewAnimationDidFinish, object: nil)
-                NotificationCenter.default.addObserver(
-                    context.coordinator,
-                    selector: #selector(Coordinator.animationDidFinish),
-                    name: .UIImageViewAnimationDidFinish,
-                    object: uiView
-                )
+                
+                // 对于非循环动画，我们需要自己创建定时器来检测动画结束
+                // UIImageView 不会自动发送动画完成通知
+                context.coordinator.setupAnimationCompletionTimer(duration: Double(images.count) / fps)
             }
             
             // 开始动画
@@ -91,6 +91,7 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
         var isPaused: Bool = false
         var images: [UIImage]
         var timer: Timer?
+        var completionTimer: Timer?
         
         init(images: [UIImage]) {
             self.images = images
@@ -99,12 +100,38 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
         
         @objc func animationDidFinish() {
             DispatchQueue.main.async { [weak self] in
+                print("动画播放完成，触发回调")
                 self?.playbackCompleted?()
+            }
+        }
+        
+        // 为非循环动画设置完成计时器
+        func setupAnimationCompletionTimer(duration: TimeInterval) {
+            // 清理之前的定时器
+            completionTimer?.invalidate()
+            
+            // 创建新的定时器，时间稍微长于动画时间，确保动画完成
+            completionTimer = Timer.scheduledTimer(withTimeInterval: duration + 0.1, repeats: false) { [weak self] _ in
+                guard let self = self, let imageView = self.imageView, !imageView.isAnimating, !self.isPaused else { return }
+                
+                // 动画已经停止且不是因为暂停，触发完成回调
+                print("非循环动画计时器触发，动画播放完成")
+                DispatchQueue.main.async {
+                    self.animationDidFinish()
+                }
+            }
+            
+            if let timer = completionTimer {
+                RunLoop.main.add(timer, forMode: .common)
             }
         }
         
         @objc func pauseAnimation() {
             guard let imageView = imageView, imageView.isAnimating else { return }
+            
+            // 暂停定时器
+            completionTimer?.invalidate()
+            completionTimer = nil
             
             // 保存当前帧索引 - 通过随机选择帧停止
             currentFrame = Int.random(in: 0..<(images.count))
@@ -133,6 +160,8 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             NotificationCenter.default.removeObserver(self)
             timer?.invalidate()
             timer = nil
+            completionTimer?.invalidate()
+            completionTimer = nil
         }
     }
     
@@ -239,7 +268,7 @@ struct MainView: View {
                 // 状态和奖励显示 - 移到上方
                 HStack(spacing: 20) {
                     // 状态文本
-                    Text(isWorkMode ? "Hero is focus on work" : "Rest time......")
+                    Text(isWorkMode ? "Hero is focus on work" : "Enjoy your rest time......")
                         .foregroundColor(.white)
                         .font(.subheadline)
                         .padding(.horizontal, 12)
@@ -379,6 +408,8 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
             } else {
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
@@ -453,6 +484,17 @@ struct MainView: View {
                             ConfigurableAnimatedView(animationKey: "boss.idle")
                                 .opacity(isHeroEntryCompleted ? 1.0 : 0.0)
                                 .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
+                            
+                            // 闪电特效 - 当装备了effect_2时显示，放在boss之上
+                            if isWorkMode && isHeroEntryCompleted {
+                                IntervalAnimatedView(animationKey: "effect.lightning", interval: 5.0)
+                                    .opacity(isEffect2Equipped() ? 1.0 : 0.0)
+                                    .animation(.easeInOut(duration: 0.3), value: isEffect2Equipped())
+                                    .onAppear {
+                                        // 预加载lightning动画
+                                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                                    }
+                            }
                             
                             // 特效动画 - 当装备了effect_1时显示法师攻击效果
                             // 把特效放在英雄动画之前，让英雄显示在特效上面
@@ -536,6 +578,7 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
             } else {
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
@@ -580,6 +623,12 @@ struct MainView: View {
     private func isEffectEquipped() -> Bool {
         return ShopManager.shared.getEquippedItems(ofType: .effect)
             .contains(where: { $0.id == "effect_1" })
+    }
+    
+    // 检查是否装备了effect_2特效
+    private func isEffect2Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_2" })
     }
     
     var bottomButtons: some View {

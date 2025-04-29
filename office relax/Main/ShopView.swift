@@ -267,9 +267,10 @@ struct ShopItemCard: View {
                         .fill(Color.black.opacity(0.3))
                         .aspectRatio(1, contentMode: .fit)
                     
-                    // 商品图片
+                    // 商品图片 - 固定比例，裁剪多余部分
                     LocalImage(name: item.imageName, placeholder: getPlaceholderImage())
-                        .padding()
+                        .frame(width: UIScreen.main.bounds.width * 0.4, height: UIScreen.main.bounds.width * 0.4) // 固定尺寸
+                        .clipShape(Rectangle()) // 裁剪成矩形
                     
                     // 已购买标记
                     if item.isPurchased ?? false {

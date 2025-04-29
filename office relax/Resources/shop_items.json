@@ -9,9 +9,9 @@
     },
     {
         "id": "effect_2",
-        "name": "闪电特效",
-        "description": "强大的闪电效果，增加战斗气势。",
-        "price": 150,
+        "name": "lightning",
+        "description": "Summon a lightning to shock your enemy!",
+        "price": 0,
         "imageName": "effect_lightning",
         "type": "effect"
     },
