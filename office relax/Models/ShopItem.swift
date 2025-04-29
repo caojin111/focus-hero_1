@@ -7,8 +7,8 @@ struct ShopItem: Identifiable, Codable, Equatable {
     let price: Int
     let imageName: String
     let type: ItemType
-    var isPurchased: Bool = false
-    var isEquipped: Bool = false
+    var isPurchased: Bool? = false
+    var isEquipped: Bool? = false
     
     enum ItemType: String, Codable, CaseIterable {
         case effect = "effect"      // 特效
@@ -27,12 +27,24 @@ struct ShopItem: Identifiable, Codable, Equatable {
 // 商品数据加载
 extension ShopItem {
     static func loadItemsFromJSON() -> [ShopItem] {
-        guard let url = Bundle.main.url(forResource: "shop_items", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let items = try? JSONDecoder().decode([ShopItem].self, from: data) else {
+        guard let url = Bundle.main.url(forResource: "shop_items", withExtension: "json") else {
+            print("⚠️ 无法找到 shop_items.json 文件")
             return sampleItems
         }
-        return items
+        
+        do {
+            let data = try Data(contentsOf: url)
+            print("📄 JSON内容：")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print(jsonString)
+            }
+            let items = try JSONDecoder().decode([ShopItem].self, from: data)
+            print("✅ 成功加载商品数量：\(items.count)")
+            return items
+        } catch {
+            print("❌ 加载失败：\(error)")
+            return sampleItems
+        }
     }
     
     // 预设商品（作为备用）

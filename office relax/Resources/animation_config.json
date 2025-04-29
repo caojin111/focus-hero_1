@@ -47,6 +47,20 @@
         "loop": true
       }
     },
+    "effect": {
+      "wizard_attack": {
+        "frames": ["wizard_attack_01", "wizard_attack_02", "wizard_attack_03", "wizard_attack_04", "wizard_attack_05", 
+                   "wizard_attack_06", "wizard_attack_07", "wizard_attack_08", "wizard_attack_09", "wizard_attack_10", 
+                   "wizard_attack_11", "wizard_attack_12", "wizard_attack_13"],
+        "fps": 10,
+        "scale": 0.5,
+        "offset": {
+          "x": -50,
+          "y": -10
+        },
+        "loop": true
+      }
+    },
     "fireplace": {
       "burn": {
         "frames": ["fire_1", "fire_2", "fire_3", "fire_4"],
@@ -86,7 +100,7 @@
         "offset_y": -60,
         "spacing": 0
       },
-      "active_animations": ["hero.run", "hero.attack", "boss.idle"]
+      "active_animations": ["hero.run", "hero.attack", "boss.idle", "effect.wizard_attack"]
     },
     "relax": {
       "hero_position": {
@@ -106,7 +120,8 @@
       "boss": "person.crop.rectangle.stack.fill",
       "fireplace": "flame.fill",
       "clothing": "tshirt.fill",
-      "accessory": "eyeglasses"
+      "accessory": "eyeglasses",
+      "effect": "sparkles"
     },
     "fallback_size": {
       "width": 45,

@@ -47,7 +47,7 @@ struct ShopView: View {
                         Image("coin")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 20, height: 20)
+                            .frame(width: 30, height: 30)
                         Text("\(userDataManager.userProfile.coins)")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
@@ -173,11 +173,18 @@ struct ShopView: View {
                 )
             }
         }
+        .onAppear {
+            shopManager.refreshItems()
+        }
+        .onDisappear {
+            // 确保离开商店时保存装备状态
+            shopManager.saveEquippedItems()
+        }
     }
     
     private func handleItemTap(_ item: ShopItem) {
         selectedItem = item
-        if item.isPurchased {
+        if item.isPurchased ?? false {
             if shopManager.isItemEquipped(itemId: item.id) {
                 showUnequipDialog = true
             } else {
@@ -265,7 +272,7 @@ struct ShopItemCard: View {
                         .padding()
                     
                     // 已购买标记
-                    if item.isPurchased {
+                    if item.isPurchased ?? false {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.title)
                             .foregroundColor(.green)
@@ -288,7 +295,7 @@ struct ShopItemCard: View {
                         .lineLimit(2)
                     
                     HStack {
-                        if item.isPurchased {
+                        if item.isPurchased ?? false {
                             // 装备/卸载按钮
                             Text(isEquipped ? "卸载" : "装备")
                                 .font(.system(size: 12, weight: .medium))

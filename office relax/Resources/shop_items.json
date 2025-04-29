@@ -1,10 +1,10 @@
 [
     {
         "id": "effect_1",
-        "name": "火焰特效",
-        "description": "炫酷的火焰效果，让战斗更加激烈。",
-        "price": 100,
-        "imageName": "effect_fire",
+        "name": "A wizard",
+        "description": "Let a wizard to help your hero!",
+        "price": 0,
+        "imageName": "shop_wizard",
         "type": "effect"
     },
     {

@@ -443,31 +443,36 @@ struct MainView: View {
     
     var heroView: some View {
         ZStack {
-            // 背景已去除，为了透明效果，不再添加任何背景
-            
             VStack(spacing: isWorkMode ? 
                   (AnimationManager.shared.getSceneConfig(for: "work")?.name_label.spacing ?? 0) : 
                   (AnimationManager.shared.getSceneConfig(for: "relax")?.name_label.spacing ?? 0)) {
                 ZStack {
-                    // 使用无缝帧动画替代之前的方式
                     if isWorkMode {
-                        // 所有工作模式动画始终加载，通过透明度控制显示
                         ZStack {
-                            // Boss动画 - 使用ConfigurableAnimatedView从配置加载
+                            // Boss动画
                             ConfigurableAnimatedView(animationKey: "boss.idle")
-                                .opacity(isHeroEntryCompleted ? 1.0 : 0.0) // 英雄入场完成后显示
+                                .opacity(isHeroEntryCompleted ? 1.0 : 0.0)
                                 .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
                             
-                            // 入场动画 - 预加载并立即显示
+                            // 特效动画 - 当装备了effect_1时显示法师攻击效果
+                            // 把特效放在英雄动画之前，让英雄显示在特效上面
+                            if isWorkMode && isHeroEntryCompleted {
+                                ConfigurableAnimatedView(animationKey: "effect.wizard_attack")
+                                    .opacity(isEffectEquipped() ? 1.0 : 0.0)
+                                    .animation(.easeInOut(duration: 0.3), value: isEffectEquipped())
+                                    .onAppear {
+                                        // 预加载wizard_attack动画
+                                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                                    }
+                            }
+                            
+                            // 入场动画
                             ConfigurableAnimatedView(animationKey: "hero.run") { 
-                                // 入场动画完成回调
                                 print("行走动画完成回调触发")
                                 DispatchQueue.main.async {
                                     withAnimation(.easeIn(duration: 0.2)) {
                                         print("入场动画完成，切换到攻击动画")
                                         isHeroEntryCompleted = true
-                                        
-                                        // 取消备用定时器
                                         entryAnimationTimer?.invalidate()
                                         entryAnimationTimer = nil
                                     }
@@ -475,16 +480,15 @@ struct MainView: View {
                             }
                             .opacity(isHeroEntryCompleted ? 0.0 : 1.0)
                             .onAppear {
-                                // 创建备用定时器，以防回调失败
                                 startEntryAnimationBackupTimer()
                             }
                             
-                            // 攻击动画 - 预加载但透明度为0
+                            // 攻击动画
                             ConfigurableAnimatedView(animationKey: "hero.attack")
-                                .opacity(isHeroEntryCompleted ? 1.0 : 0.0)  // 根据状态控制透明度
-                                .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)  // 添加透明度动画
+                                .opacity(isHeroEntryCompleted ? 1.0 : 0.0)
+                                .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
                         }
-                    } else if !isWorkMode {
+                    } else {
                         // 休息模式区域 - 所有动画预加载
                         ZStack {
                             // 休息模式英雄动画 - 使用ConfigurableAnimatedView从配置加载
@@ -519,47 +523,23 @@ struct MainView: View {
                 (AnimationManager.shared.getSceneConfig(for: "relax")?.hero_position.y ?? 50)
         )
         .onChange(of: isWorkMode) { newValue in
-            // 当模式切换时重置状态，预加载动画
             if newValue {
-                // 使用动画使切换更平滑
                 withAnimation(.easeOut(duration: 0.2)) {
                     isHeroEntryCompleted = false
                 }
-                // 取消定时器
                 entryAnimationTimer?.invalidate()
                 entryAnimationTimer = nil
                 
-                // 预先加载所有动画以确保流畅过渡
+                // 预加载所有动画
                 AnimationManager.shared.reloadConfigurationAndRefresh()
-                
-                // 预加载攻击动画确保无缝衔接
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
-            } else {
-                // 预加载休息动画
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
-                _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
-            }
-        }
-        .onAppear {
-            // 确保配置已加载
-            AnimationManager.shared.reloadConfigurationAndRefresh()
-            
-            // 预加载所有动画以确保无缝衔接
-            if isWorkMode {
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
-                _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
             } else {
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
             }
-        }
-        .onDisappear {
-            // 清理定时器
-            entryAnimationTimer?.invalidate()
-            entryAnimationTimer = nil
         }
     }
     
@@ -596,6 +576,12 @@ struct MainView: View {
         }
     }
     
+    // 检查是否装备了effect_1特效
+    private func isEffectEquipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_1" })
+    }
+    
     var bottomButtons: some View {
         VStack(spacing: 10) {
             // 暂停按钮（原Skip按钮）
@@ -617,22 +603,53 @@ struct MainView: View {
             
             // 工作/休息模式下不同的按钮
             if !isWorkMode {
-                // 商店按钮
-                Button(action: { showShop = true }) {
-                    VStack(spacing: 3) {
-                        Image(systemName: "cart")
-                            .font(.title3)
-                        Text("shop")
-                            .font(.caption)
+                HStack(spacing: 10) {
+                    // 邮件按钮
+                    Button(action: { 
+                        sendEmail()
+                    }) {
+                        VStack(spacing: 3) {
+                            Image("mail")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            Text("Contact us")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.black)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white.opacity(0.8))
+                        .cornerRadius(8)
                     }
-                    .foregroundColor(.black)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.white.opacity(0.8))
-                    .cornerRadius(8)
+                    
+                    // 商店按钮
+                    Button(action: { showShop = true }) {
+                        VStack(spacing: 3) {
+                            Image("shop")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            Text("shop")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.black)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white.opacity(0.8))
+                        .cornerRadius(8)
+                    }
                 }
                 .padding(.horizontal, 32)
             }
+        }
+    }
+    
+    // 发送邮件
+    private func sendEmail() {
+        let email = "dxycj250@gmail.com"
+        if let url = URL(string: "mailto:\(email)") {
+            UIApplication.shared.open(url)
         }
     }
     
