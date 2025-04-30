@@ -776,6 +776,8 @@ struct MainView: View {
         if isWorkMode {
             remainingSeconds = userDataManager.getWorkDuration() * 60
             initialWorkSeconds = userDataManager.getWorkDuration() * 60
+            // 更新初始血条状态
+            updateBossHealthProgress()
         } else {
             remainingSeconds = userDataManager.getRelaxDuration() * 60
         }
@@ -827,7 +829,7 @@ struct MainView: View {
                     
                     // 更新Boss血条进度
                     if isWorkMode {
-                        _ = calculateBossHealthProgress()
+                        updateBossHealthProgress()
                     }
                 } else {
                     // 计时结束
@@ -1062,8 +1064,12 @@ struct MainView: View {
         }
         
         let remainingPercentage = Double(remainingSeconds) / Double(initialWorkSeconds)
-        bossHealthProgress = 1.0 - remainingPercentage // 更新血条状态变量
-        return bossHealthProgress // 从满到空
+        return 1.0 - remainingPercentage // 从满到空
+    }
+    
+    // 更新Boss血量进度状态 - 在计时器中调用
+    func updateBossHealthProgress() {
+        bossHealthProgress = calculateBossHealthProgress()
     }
     
     // 设置倒计时区域位置
