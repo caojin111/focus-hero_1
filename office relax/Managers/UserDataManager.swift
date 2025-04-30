@@ -111,4 +111,15 @@ class UserDataManager: ObservableObject {
         userProfile.recommendedRelaxDuration = duration
         saveUserProfile()
     }
+    
+    // 增加专注次数
+    func incrementFocusCount() {
+        userProfile.focusCount += 1
+        saveUserProfile()
+    }
+    
+    // 获取专注次数
+    func getFocusCount() -> Int {
+        return userProfile.focusCount
+    }
 } 

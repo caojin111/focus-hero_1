@@ -17,6 +17,7 @@ struct UserProfile: Codable {
     var onboardingCompleted: Bool    // 是否完成引导
     var recommendedWorkDuration: Int // 推荐工作时长（分钟）
     var recommendedRelaxDuration: Int // 推荐休息时长（分钟）
+    var focusCount: Int              // 专注次数计数
     
     init(age: Int = 25, 
          gender: String = "男", 
@@ -33,6 +34,7 @@ struct UserProfile: Codable {
         self.catName = catName
         self.coins = coins
         self.onboardingCompleted = onboardingCompleted
+        self.focusCount = 0
         
         // 计算推荐工作和休息时长
         self.recommendedWorkDuration = UserProfile.calculateWorkDuration(

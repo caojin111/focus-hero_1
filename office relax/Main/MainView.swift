@@ -193,12 +193,16 @@ struct MainView: View {
     @State private var lastTickDate: Date = Date()
     
     // 场景切换效果相关状态
-    @State private var isShowingTransition = false // 控制黑屏淡入淡出
+    @State private var isShowingTransition = true // 初始状态设为true，一开始就显示黑屏
     @State private var isFirstAppear = true // 跟踪是否是首次出现
     
     @State private var showSettings = false
     @State private var showPauseDialog = false  // 控制暂停弹窗的显示
     @State private var showShop = false  // 控制商店弹窗的显示
+    @State private var showStartFocus = true  // 控制 StartFocus 视图的显示
+    
+    // 穿帮防护
+    @State private var contentLoaded = false // 内容是否已加载完成
     
     // 暂停状态相关
     @State private var isPaused = false // 跟踪是否暂停状态
@@ -217,105 +221,107 @@ struct MainView: View {
             // 背景
             background
             
-            VStack(spacing: 0) {
-                // 顶部信息栏和计时器区域
-                HStack {
-                    // 金币余额
-                    HStack(spacing: 2) {
-                        Image("coin")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                        Text("\(userDataManager.userProfile.coins)")
-                            .foregroundColor(.black)
-                            .fontWeight(.bold)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.8))
-                    .cornerRadius(15)
-                    
-                    Spacer()
-                    
-                    // 计时器显示 - 添加偏移和缩放控制
-                    Text(formatTime(seconds: remainingSeconds))
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.vertical, 5)
-                        .padding(.horizontal, 12)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(10)
-                        .offset(x: timerOffsetX, y: timerOffsetY)
-                        .scaleEffect(timerScale)
-                    
-                    Spacer()
-                    
-                    // 设置按钮
-                    Button(action: {
-                        audioManager.playSound("click")
-                        showSettings = true
-                    }) {
-                        Image("settings")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(.white)
-                    }
-                }
-                .padding(.top, 50)  // 增加顶部间距，避开状态栏
-                .padding(.horizontal)
-                
-                // 状态和奖励显示 - 移到上方
-                HStack(spacing: 20) {
-                    // 状态文本
-                    Text(isWorkMode ? "Hero is focus on work" : "Enjoy your rest time......")
-                        .foregroundColor(.white)
-                        .font(.subheadline)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 4)
-                        .background(
-                            Image("banner")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 30)
-                        )
-                        .cornerRadius(6)
-                    
-                    // 金币奖励预览（仅工作模式显示）
-                    if isWorkMode {
-                        HStack {
-                            Text("You will get:")
-                                .foregroundColor(.black)
-                                .font(.subheadline)
+            if contentLoaded {
+                VStack(spacing: 0) {
+                    // 顶部信息栏和计时器区域
+                    HStack {
+                        // 金币余额
+                        HStack(spacing: 2) {
                             Image("coin")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 16, height: 16)
-                            Text("\(previewCoinsReward())")
+                                .frame(width: 20, height: 20)
+                            Text("\(userDataManager.userProfile.coins)")
                                 .foregroundColor(.black)
                                 .fontWeight(.bold)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
                         .background(Color.white.opacity(0.8))
-                        .cornerRadius(6)
+                        .cornerRadius(15)
+                        
+                        Spacer()
+                        
+                        // 计时器显示 - 添加偏移和缩放控制
+                        Text(formatTime(seconds: remainingSeconds))
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.vertical, 5)
+                            .padding(.horizontal, 12)
+                            .background(Color.black.opacity(0.5))
+                            .cornerRadius(10)
+                            .offset(x: timerOffsetX, y: timerOffsetY)
+                            .scaleEffect(timerScale)
+                        
+                        Spacer()
+                        
+                        // 设置按钮
+                        Button(action: {
+                            audioManager.playSound("click")
+                            showSettings = true
+                        }) {
+                            Image("settings")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 40, height: 40)
+                                .foregroundColor(.white)
+                        }
                     }
+                    .padding(.top, 50)  // 增加顶部间距，避开状态栏
+                    .padding(.horizontal)
+                    
+                    // 状态和奖励显示 - 移到上方
+                    HStack(spacing: 20) {
+                        // 状态文本
+                        Text(isWorkMode ? "Hero is focus on work" : "Enjoy your rest time......")
+                            .foregroundColor(.white)
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(
+                                Image("banner")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 30)
+                            )
+                            .cornerRadius(6)
+                        
+                        // 金币奖励预览（仅工作模式显示）
+                        if isWorkMode {
+                            HStack {
+                                Text("You will get:")
+                                    .foregroundColor(.black)
+                                    .font(.subheadline)
+                                Image("coin")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
+                                Text("\(previewCoinsReward())")
+                                    .foregroundColor(.black)
+                                    .fontWeight(.bold)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.8))
+                            .cornerRadius(6)
+                        }
+                    }
+                    .padding(.top, 10)
+                    
+                    // 增加空间推动英雄到中央位置
+                    Spacer(minLength: 100)
+                    
+                    // 英雄动画 - 增大尺寸
+                    heroView
+                        .frame(height: 280)  // 增加英雄区域高度
+                    
+                    // 增加空间推动底部按钮
+                    Spacer(minLength: 40)  // 减少底部间距，补偿增大的英雄区域
+                    
+                    // 底部按钮区域
+                    bottomButtons
+                        .padding(.bottom, 40)
                 }
-                .padding(.top, 10)
-                
-                // 增加空间推动英雄到中央位置
-                Spacer(minLength: 100)
-                
-                // 英雄动画 - 增大尺寸
-                heroView
-                    .frame(height: 280)  // 增加英雄区域高度
-                
-                // 增加空间推动底部按钮
-                Spacer(minLength: 40)  // 减少底部间距，补偿增大的英雄区域
-                
-                // 底部按钮区域
-                bottomButtons
-                    .padding(.bottom, 40)
             }
             
             // 黑屏过渡层
@@ -375,44 +381,32 @@ struct MainView: View {
         .onAppear {
             setTimerPosition(x: -3, y: 50)  // 设置倒计时区域向右偏移100点，向下偏移50点
             setTimerScale(2.5)  // 设置倒计时区域缩放为1.5倍
-            setupTimer()
-            // 初始化入场动画状态
-            isHeroEntryCompleted = false
-            
-            // 启动背景音乐
-            if isWorkMode {
-                audioManager.playWorkMusic()
-            } else {
-                audioManager.playRelaxMusic()
-            }
-            
-            // 如果是首次出现，显示黑屏过渡
-            if isFirstAppear {
-                // 开始时显示黑屏
-                isShowingTransition = true
-                
-                // 短暂延迟后淡出黑屏
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation {
-                        isShowingTransition = false
-                    }
-                    isFirstAppear = false
-                }
-            }
             
             // 确保配置已加载
             AnimationManager.shared.reloadConfigurationAndRefresh()
             
-            // 预加载所有动画以确保无缝衔接
-            if isWorkMode {
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
-                _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
-                _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
-                _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
-            } else {
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
-                _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+            // 初始化入场动画状态
+            isHeroEntryCompleted = false
+            
+            // 延迟加载内容，防止穿帮
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // 预加载所有动画资源，但保持黑屏
+                if isWorkMode {
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                } else {
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                }
+                
+                // 设置内容已加载标记
+                contentLoaded = true
+                
+                // 初始状态为显示 StartFocusView
+                showStartFocus = true
             }
         }
         .onDisappear {
@@ -428,6 +422,69 @@ struct MainView: View {
         }
         .sheet(isPresented: $showShop) {
             ShopView()
+        }
+        .fullScreenCover(isPresented: $showStartFocus) {
+            StartFocusView(
+                focusCount: userDataManager.getFocusCount() + 1,
+                onComplete: {
+                    // 递增专注计数
+                    userDataManager.incrementFocusCount()
+                    
+                    // 预先设置状态，避免后续动画闪烁
+                    if isWorkMode {
+                        // 确保入场动画状态正确 - 重要修复
+                        isHeroEntryCompleted = false
+                        
+                        // 预加载工作模式动画
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                    }
+                    
+                    // 延迟一点时间后关闭StartFocusView，让主视图内容先准备好
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        // Start Focus 完成后的回调
+                        showStartFocus = false
+                    
+                        // 初始化并启动计时器
+                        setupTimer()
+                        
+                        // 启动背景音乐
+                        if isWorkMode {
+                            audioManager.playWorkMusic()
+                        } else {
+                            audioManager.playRelaxMusic()
+                        }
+                        
+                        // 处理动画逻辑
+                        if isWorkMode {
+                            // 延迟启动入场动画定时器，确保渲染已就绪
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                // 启动入场动画定时器
+                                startEntryAnimationBackupTimer()
+                                
+                                // 淡出黑屏 - 延迟执行以避免闪烁
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        isShowingTransition = false
+                                    }
+                                }
+                            }
+                        } else {
+                            // 预加载休息模式动画
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
+                            _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                            
+                            // 淡出黑屏
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                isShowingTransition = false
+                            }
+                        }
+                    }
+                }
+            )
         }
     }
     
@@ -661,9 +718,9 @@ struct MainView: View {
                             Image("mail")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 20, height: 20)
+                                .frame(width: 30, height: 30)
                             Text("Contact us")
-                                .font(.caption)
+                                .font(.system(size: 15))
                         }
                         .foregroundColor(.black)
                         .padding(.vertical, 12)
@@ -678,9 +735,9 @@ struct MainView: View {
                             Image("shop")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 20, height: 20)
+                                .frame(width: 30, height: 30)
                             Text("shop")
-                                .font(.caption)
+                                .font(.system(size: 15))
                         }
                         .foregroundColor(.black)
                         .padding(.vertical, 12)
@@ -828,28 +885,22 @@ struct MainView: View {
                 remainingSeconds = userDataManager.getWorkDuration() * 60
                 initialWorkSeconds = userDataManager.getWorkDuration() * 60
                 
-                // 切换背景音乐到工作模式
-                audioManager.playWorkMusic()
+                // 停止音乐
+                audioManager.stopAllMusic()
                 
-                // 重置入场动画状态
+                // 重置入场动画状态（StartFocusView完成后会自动启动入场动画定时器）
                 isHeroEntryCompleted = false
                 
-                // 预加载工作场景中的动画
+                // 预加载动画
+                AnimationManager.shared.reloadConfigurationAndRefresh()
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
                 
-                // 短暂延迟后淡出黑屏，显示新场景
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        isShowingTransition = false
-                    }
-                    
-                    // 黑屏消失后启动计时器
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        startTimer()
-                    }
-                }
+                // 先显示 StartFocusView - 保持黑屏，在StartFocusView完成后再淡出
+                showStartFocus = true
             }
         }
     }
