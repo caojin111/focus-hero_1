@@ -45,6 +45,16 @@
         },
         "flipped": true,
         "loop": true
+      },
+      "death": {
+        "frames": ["boss_death_1", "boss_death_2", "boss_death_3", "boss_death_4", "boss_death_5"],
+        "fps": 1.5,
+        "scale": 1.0,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "loop": false
       }
     },
     "effect": {
@@ -122,6 +132,17 @@
         "spacing": 0
       },
       "active_animations": ["hero.relax", "fireplace.burn"]
+    },
+    "victory": {
+      "hero_position": {
+        "x": 0,
+        "y": 0
+      },
+      "name_label": {
+        "offset_y": 0,
+        "spacing": 0
+      },
+      "active_animations": ["boss.death"]
     }
   },
   "defaults": {

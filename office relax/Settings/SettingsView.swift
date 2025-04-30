@@ -32,7 +32,7 @@ struct SettingsView: View {
                             Text("\(Int(workDuration)) minutes")
                                 .foregroundColor(.gray)
                         }
-                        Slider(value: $workDuration, in: 15...60, step: 1)
+                        Slider(value: $workDuration, in: 1...60, step: 1)
                             .onChange(of: workDuration) { newValue in
                                 userDataManager.updateWorkDuration(Int(newValue))
                             }

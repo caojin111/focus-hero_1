@@ -219,6 +219,10 @@ struct MainView: View {
     // 添加震动生成器
     private let feedbackGenerator = UINotificationFeedbackGenerator()
     
+    // 增加状态属性
+    @State private var showVictoryView = false
+    @State private var victoryCoinsEarned = 0
+    
     var body: some View {
         ZStack {
             // 背景
@@ -488,6 +492,36 @@ struct MainView: View {
                     }
                 }
             )
+        }
+        // 添加胜利界面的 sheet 视图
+        .fullScreenCover(isPresented: $showVictoryView) {
+            VictoryView(coinsEarned: victoryCoinsEarned) {
+                // 胜利界面完成后的回调
+                showVictoryView = false
+                
+                // 切换到休息模式
+                isWorkMode = false
+                remainingSeconds = userDataManager.getRelaxDuration() * 60
+                
+                // 切换背景音乐到休息模式
+                audioManager.playRelaxMusic()
+                
+                // 预加载休息场景中的动画
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
+                _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                
+                // 短暂延迟后淡出黑屏，显示新场景
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isShowingTransition = false
+                    }
+                    
+                    // 黑屏消失后启动计时器
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        startTimer()
+                    }
+                }
+            }
         }
     }
     
@@ -861,34 +895,23 @@ struct MainView: View {
             let coinsEarned = calculateCoinsReward(actualWorkSeconds)
             userDataManager.addCoins(coinsEarned)
             
+            // 保存获得的金币数量，用于胜利界面显示
+            victoryCoinsEarned = coinsEarned
+            
             // 开始场景切换：先显示黑屏
             withAnimation(.easeInOut(duration: 0.15)) {
                 isShowingTransition = true
             }
             
-            // 等待黑屏完全显示后，切换场景并准备后续操作
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                // 切换到休息模式
-                isWorkMode = false
-                remainingSeconds = userDataManager.getRelaxDuration() * 60
+            // 等待黑屏完全显示后，预加载胜利界面所需资源
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // 预加载Boss倒地动画
+                AnimationManager.shared.reloadAnimation(for: "boss.death")
                 
-                // 切换背景音乐到休息模式
-                audioManager.playRelaxMusic()
-                
-                // 预加载休息场景中的动画
-                _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
-                _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
-                
-                // 短暂延迟后淡出黑屏，显示新场景
+                // 等待资源加载完成后显示胜利界面
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        isShowingTransition = false
-                    }
-                    
-                    // 黑屏消失后启动计时器
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        startTimer()
-                    }
+                    // 显示胜利界面
+                    showVictoryView = true
                 }
             }
         } else {
@@ -957,8 +980,34 @@ struct MainView: View {
         
         // 等待黑屏显示后完成场景切换
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            // 调用计时器完成方法来处理后续逻辑
-            timerCompleted()
+            if isWorkMode {
+                // 工作模式跳过，直接切换到休息模式，不显示胜利界面
+                // 切换到休息模式
+                isWorkMode = false
+                remainingSeconds = userDataManager.getRelaxDuration() * 60
+                
+                // 切换背景音乐到休息模式
+                audioManager.playRelaxMusic()
+                
+                // 预加载休息场景中的动画
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
+                _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                
+                // 短暂延迟后淡出黑屏，显示新场景
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isShowingTransition = false
+                    }
+                    
+                    // 黑屏消失后启动计时器
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        startTimer()
+                    }
+                }
+            } else {
+                // 休息模式跳过，调用原始方法处理
+                timerCompleted()
+            }
         }
     }
     

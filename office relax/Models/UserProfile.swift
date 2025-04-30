@@ -84,7 +84,7 @@ struct UserProfile: Codable {
         }
         
         // 确保时长在合理范围内
-        return min(max(baseDuration, 15), 45)
+        return min(max(baseDuration, 1), 45)
     }
     
     // 计算推荐休息时长
