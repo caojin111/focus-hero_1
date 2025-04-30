@@ -213,6 +213,9 @@ struct MainView: View {
     @State private var timerOffsetY: CGFloat = 0
     @State private var timerScale: CGFloat = 1.0
     
+    // Boss血条相关状态
+    @State private var bossHealthProgress: Double = 0.0
+    
     // 添加震动生成器
     private let feedbackGenerator = UINotificationFeedbackGenerator()
     
@@ -538,9 +541,18 @@ struct MainView: View {
                     if isWorkMode {
                         ZStack {
                             // Boss动画
-                            ConfigurableAnimatedView(animationKey: "boss.idle")
-                                .opacity(isHeroEntryCompleted ? 1.0 : 0.0)
-                                .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
+                            VStack(spacing: 5) {
+                                // 添加Boss血条
+                                BossHealthBar(
+                                    progress: calculateBossHealthProgress(),
+                                    isVisible: isHeroEntryCompleted
+                                )
+                                .offset(x: 180, y: -60) // 向右180像素，向上60像素，对齐Boss头部上方
+                                
+                                ConfigurableAnimatedView(animationKey: "boss.idle")
+                                    .opacity(isHeroEntryCompleted ? 1.0 : 0.0)
+                                    .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
+                            }
                             
                             // 闪电特效 - 当装备了effect_2时显示，放在boss之上
                             if isWorkMode && isHeroEntryCompleted {
@@ -812,6 +824,11 @@ struct MainView: View {
                 // 正常减少一秒
                 if remainingSeconds > 0 {
                     remainingSeconds -= 1
+                    
+                    // 更新Boss血条进度
+                    if isWorkMode {
+                        _ = calculateBossHealthProgress()
+                    }
                 } else {
                     // 计时结束
                     timer?.invalidate()
@@ -1036,6 +1053,17 @@ struct MainView: View {
         let minutes = seconds / 60
         let secs = seconds % 60
         return String(format: "%02d:%02d", minutes, secs)
+    }
+    
+    // 计算Boss血量进度
+    func calculateBossHealthProgress() -> Double {
+        if initialWorkSeconds <= 0 {
+            return 0.0 // 防止除以零
+        }
+        
+        let remainingPercentage = Double(remainingSeconds) / Double(initialWorkSeconds)
+        bossHealthProgress = 1.0 - remainingPercentage // 更新血条状态变量
+        return bossHealthProgress // 从满到空
     }
     
     // 设置倒计时区域位置
