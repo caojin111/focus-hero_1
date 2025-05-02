@@ -407,6 +407,7 @@ struct MainView: View {
                 } else {
                     _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                     _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
                 }
                 
                 // 设置内容已加载标记
@@ -483,6 +484,7 @@ struct MainView: View {
                             // 预加载休息模式动画
                             _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                             _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                            _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
                             
                             // 淡出黑屏
                             withAnimation(.easeInOut(duration: 0.25)) {
@@ -503,12 +505,23 @@ struct MainView: View {
                 isWorkMode = false
                 remainingSeconds = userDataManager.getRelaxDuration() * 60
                 
+                // 停止所有商店音效（尤其是闪电音效）
+                AudioManager.shared.stopAllShopSounds()
+                
+                // 发送工作模式变更通知
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("WorkModeChanged"),
+                    object: nil,
+                    userInfo: ["isWorkMode": false]
+                )
+                
                 // 切换背景音乐到休息模式
                 audioManager.playRelaxMusic()
                 
                 // 预加载休息场景中的动画
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
                 
                 // 短暂延迟后淡出黑屏，显示新场景
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -521,6 +534,44 @@ struct MainView: View {
                         startTimer()
                     }
                 }
+            }
+        }
+        .onChange(of: isWorkMode) { newValue in
+            if newValue {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    isHeroEntryCompleted = false
+                }
+                entryAnimationTimer?.invalidate()
+                entryAnimationTimer = nil
+                
+                // 预加载所有动画
+                AnimationManager.shared.reloadConfigurationAndRefresh()
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+                _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                
+                // 发送工作模式变更通知
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("WorkModeChanged"),
+                    object: nil,
+                    userInfo: ["isWorkMode": true]
+                )
+            } else {
+                // 切换到休息模式，停止所有商店音效，尤其是闪电音效
+                AudioManager.shared.stopAllShopSounds()
+                
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
+                _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
+                
+                // 发送工作模式变更通知
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("WorkModeChanged"),
+                    object: nil,
+                    userInfo: ["isWorkMode": false]
+                )
             }
         }
     }
@@ -579,7 +630,7 @@ struct MainView: View {
                                 // 添加Boss血条
                                 BossHealthBar(
                                     progress: calculateBossHealthProgress(),
-                                    isVisible: isHeroEntryCompleted
+                                    isVisible: isHeroEntryCompleted && isEffect4Equipped()
                                 )
                                 .offset(x: 180, y: -60) // 向右180像素，向上60像素，对齐Boss头部上方
                                 
@@ -641,6 +692,17 @@ struct MainView: View {
                             
                             // 火炉动画 - 使用ConfigurableAnimatedView从配置加载
                             ConfigurableAnimatedView(animationKey: "fireplace.burn")
+                            
+                            // 旅人动画 - 只有在装备了effect_5时才显示
+                            if !isWorkMode {
+                                ConfigurableAnimatedView(animationKey: "traveller.sit")
+                                    .opacity(isEffect5Equipped() ? 1.0 : 0.0)
+                                    .animation(.easeInOut(duration: 0.3), value: isEffect5Equipped())
+                                    .onAppear {
+                                        // 预加载traveller动画
+                                        _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
+                                    }
+                            }
                         }
                     }
                 }
@@ -683,8 +745,12 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
             } else {
+                // 切换到休息模式，停止所有商店音效，尤其是闪电音效
+                AudioManager.shared.stopAllShopSounds()
+                
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
             }
         }
     }
@@ -732,6 +798,18 @@ struct MainView: View {
     private func isEffect2Equipped() -> Bool {
         return ShopManager.shared.getEquippedItems(ofType: .effect)
             .contains(where: { $0.id == "effect_2" })
+    }
+    
+    // 检查是否装备了effect_4特效
+    private func isEffect4Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_4" })
+    }
+    
+    // 检查是否装备了effect_5特效
+    private func isEffect5Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_5" })
     }
     
     var bottomButtons: some View {
@@ -986,12 +1064,23 @@ struct MainView: View {
                 isWorkMode = false
                 remainingSeconds = userDataManager.getRelaxDuration() * 60
                 
+                // 停止所有商店音效（尤其是闪电音效）
+                AudioManager.shared.stopAllShopSounds()
+                
+                // 发送工作模式变更通知
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("WorkModeChanged"),
+                    object: nil,
+                    userInfo: ["isWorkMode": false]
+                )
+                
                 // 切换背景音乐到休息模式
                 audioManager.playRelaxMusic()
                 
                 // 预加载休息场景中的动画
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
+                _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
                 
                 // 短暂延迟后淡出黑屏，显示新场景
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

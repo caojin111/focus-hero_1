@@ -129,10 +129,43 @@ struct ShopView: View {
                     item: item,
                     onConfirm: {
                         audioManager.playSound("click")
+                        
+                        // 装备商品
                         shopManager.equipItem(itemId: item.id)
+                        
+                        // 立即刷新UI状态
+                        if item.id == "sound_1" {
+                            // 为sound_1特别处理，确保它显示为已装备状态
+                            print("特别处理sound_1装备状态")
+                            
+                            // 确保已装备的音效列表包含sound_1
+                            if !shopManager.equippedSounds.contains(where: { $0.id == "sound_1" }) {
+                                if let soundItem = shopManager.purchasedItems.first(where: { $0.id == "sound_1" }) {
+                                    var updatedSoundItem = soundItem
+                                    updatedSoundItem.isEquipped = true
+                                    shopManager.equippedSounds.append(updatedSoundItem)
+                                }
+                            }
+                            
+                            // 确保所有商店项目中的sound_1显示为已装备
+                            if let index = shopManager.shopItems.firstIndex(where: { $0.id == "sound_1" }) {
+                                shopManager.shopItems[index].isEquipped = true
+                            }
+                            
+                            // 保存装备状态
+                            shopManager.saveEquippedItems()
+                        }
+                        
+                        shopManager.objectWillChange.send()
+                        
+                        // 关闭对话框
                         selectedItem = nil
                         showEquipDialog = false
-                        shopManager.objectWillChange.send()
+                        
+                        // 刷新UI
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            shopManager.objectWillChange.send()
+                        }
                     },
                     onCancel: {
                         audioManager.playSound("click")
@@ -267,10 +300,11 @@ struct ShopItemCard: View {
                         .fill(Color.black.opacity(0.3))
                         .aspectRatio(1, contentMode: .fit)
                     
-                    // 商品图片 - 固定比例，裁剪多余部分
+                    // 商品图片 - 使用aspectRatio适应不同比例的图片
                     LocalImage(name: item.imageName, placeholder: getPlaceholderImage())
-                        .frame(width: UIScreen.main.bounds.width * 0.4, height: UIScreen.main.bounds.width * 0.4) // 固定尺寸
-                        .clipShape(Rectangle()) // 裁剪成矩形
+                        .scaledToFit()
+                        .frame(maxWidth: UIScreen.main.bounds.width * 0.4, maxHeight: UIScreen.main.bounds.width * 0.4)
+                        .padding(8)
                     
                     // 已购买标记
                     if item.isPurchased ?? false {

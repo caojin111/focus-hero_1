@@ -68,12 +68,23 @@ struct SettingsView: View {
                 
                 Section(header: Text("Sound")) {
                     Toggle("Enable sound", isOn: $soundEnabled)
+                        .onChange(of: soundEnabled) { newValue in
+                            // 通知AudioManager音效开关状态已更改
+                            if !newValue {
+                                // 如果禁用音效，停止所有正在播放的商店音效
+                                audioManager.pauseAllSounds()
+                            }
+                        }
                     
                     if soundEnabled {
                         HStack {
                             Image(systemName: "speaker.fill")
                                 .foregroundColor(.gray)
                             Slider(value: $soundVolume, in: 0...1)
+                                .onChange(of: soundVolume) { newValue in
+                                    // 当音效音量改变时，更新所有正在播放的商店音效音量
+                                    audioManager.refreshAllSoundVolumes()
+                                }
                             Image(systemName: "speaker.wave.3.fill")
                                 .foregroundColor(.gray)
                         }

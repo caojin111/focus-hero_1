@@ -12,6 +12,7 @@
 		031A57072DBD31070058A36B /* click.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A57062DBD31070058A36B /* click.mp3 */; };
 		037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A002DBBAB1D0014996A /* work_music.mp3 */; };
 		037E0A052DBBAB910014996A /* relax_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A042DBBAB910014996A /* relax_music.mp3 */; };
+		039546002DC3B0F50077ACB6 /* shop_thunder.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 039545FF2DC3B0F50077ACB6 /* shop_thunder.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -51,6 +52,7 @@
 		031A57062DBD31070058A36B /* click.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = click.mp3; sourceTree = "<group>"; };
 		037E0A002DBBAB1D0014996A /* work_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = work_music.mp3; sourceTree = "<group>"; };
 		037E0A042DBBAB910014996A /* relax_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = relax_music.mp3; sourceTree = "<group>"; };
+		039545FF2DC3B0F50077ACB6 /* shop_thunder.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = shop_thunder.mp3; sourceTree = "<group>"; };
 		03A2AEAF2DB652B10085EA8D /* office relax.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "office relax.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		03A2AEBD2DB652B20085EA8D /* office relaxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "office relaxTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		03A2AEC72DB652B20085EA8D /* office relaxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "office relaxUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,6 +117,7 @@
 		03A2AEA62DB652B10085EA8D = {
 			isa = PBXGroup;
 			children = (
+				039545FF2DC3B0F50077ACB6 /* shop_thunder.mp3 */,
 				031A57062DBD31070058A36B /* click.mp3 */,
 				031A56FC2DBCF43C0058A36B /* stinger.mp3 */,
 				031A56B22DBCEF060058A36B /* onboarding_music.mp3 */,
@@ -263,6 +266,7 @@
 				031A56B32DBCEF060058A36B /* onboarding_music.mp3 in Resources */,
 				037E0A052DBBAB910014996A /* relax_music.mp3 in Resources */,
 				037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */,
+				039546002DC3B0F50077ACB6 /* shop_thunder.mp3 in Resources */,
 				031A56FD2DBCF43C0058A36B /* stinger.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

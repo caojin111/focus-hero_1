@@ -109,17 +109,20 @@ class AnimationManager: ObservableObject {
     
     // 重新加载配置并刷新所有动画
     func reloadConfigurationAndRefresh() {
-        // 清空现有缓存
-        loadedAnimations.removeAll()
-        preloadedFrames.removeAll()
-        
-        // 重新加载配置
-        loadConfig()
-        
-        // 通知观察者配置已更新
-        objectWillChange.send()
-        
-        print("动画配置已重新加载和刷新")
+        // 使用异步队列，避免在视图更新周期中修改@Published属性
+        DispatchQueue.main.async {
+            // 清空现有缓存
+            self.loadedAnimations.removeAll()
+            self.preloadedFrames.removeAll()
+            
+            // 重新加载配置
+            self.loadConfig()
+            
+            // 通知观察者配置已更新
+            self.objectWillChange.send()
+            
+            print("动画配置已重新加载和刷新")
+        }
     }
     
     // 处理所有动画信息
@@ -167,12 +170,15 @@ class AnimationManager: ObservableObject {
         }
         
         if !frames.isEmpty {
-            preloadedFrames[animKey] = frames
-            
-            // 更新动画信息中的帧数组
-            if var animInfo = loadedAnimations[animKey] {
-                animInfo.frames = frames
-                loadedAnimations[animKey] = animInfo
+            // 使用异步队列更新，避免在视图更新周期中修改@Published属性
+            DispatchQueue.main.async {
+                self.preloadedFrames[animKey] = frames
+                
+                // 更新动画信息中的帧数组
+                if var animInfo = self.loadedAnimations[animKey] {
+                    animInfo.frames = frames
+                    self.loadedAnimations[animKey] = animInfo
+                }
             }
         }
     }
@@ -213,7 +219,10 @@ class AnimationManager: ObservableObject {
             return
         }
         
-        preloadFrames(for: key, frameNames: frameNames)
+        // 使用异步队列加载帧，避免在视图更新周期中修改@Published属性
+        DispatchQueue.main.async {
+            self.preloadFrames(for: key, frameNames: frameNames)
+        }
     }
 }
 
@@ -254,23 +263,29 @@ struct ConfigurableAnimatedView: View {
                     .frame(width: 45, height: 45)
                     .foregroundColor(.white)
                     .onAppear {
-                        // 如果显示了占位符，尝试立即加载动画
-                        manager.reloadAnimation(for: animationKey)
+                        // 如果显示了占位符，尝试立即加载动画，使用异步加载
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            manager.reloadAnimation(for: animationKey)
+                        }
                     }
             }
         }
         .onAppear {
-            // 预加载动画帧
-            if manager.getPreloadedFrames(for: animationKey).isEmpty {
-                manager.reloadAnimation(for: animationKey)
-            }
+            // 预加载动画帧，使用异步加载避免视图更新周期内修改@Published属性
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if manager.getPreloadedFrames(for: animationKey).isEmpty {
+                    manager.reloadAnimation(for: animationKey)
+                }
             
-            // 确保第一次出现时立即触发动画
-            hasStartedAnimation = true
+                // 确保第一次出现时立即触发动画
+                hasStartedAnimation = true
+            }
         }
         .onChange(of: animationKey) { _ in
-            // 当动画Key变化时重新加载
-            manager.reloadAnimation(for: animationKey)
+            // 当动画Key变化时重新加载，使用异步加载
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                manager.reloadAnimation(for: animationKey)
+            }
         }
     }
 } 

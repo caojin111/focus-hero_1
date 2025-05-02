@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import SwiftUI
 
 class AudioManager: ObservableObject {
     static let shared = AudioManager()
@@ -15,6 +16,11 @@ class AudioManager: ObservableObject {
     private var workModePlayer: AVAudioPlayer?
     private var relaxModePlayer: AVAudioPlayer?
     private var soundPlayers: [String: AVAudioPlayer] = [:]
+    
+    // 跟踪每个音效最后播放时间
+    private var lastSoundPlayTimes: [String: Date] = [:]
+    // 音效播放的最小间隔时间(秒)
+    private let soundCooldown: TimeInterval = 3.0
     
     // 音量设置 (0.0 - 1.0)
     @Published var musicVolume: Float = 0.5 {
@@ -40,6 +46,10 @@ class AudioManager: ObservableObject {
             }
         }
     }
+    
+    // 缓存系统音效设置
+    @AppStorage("settings_sound_enabled") private var soundEnabled = true
+    @AppStorage("settings_sound_volume") private var soundVolume: Double = 0.7
     
     // 当前模式
     private var isWorkMode: Bool = true
@@ -149,6 +159,8 @@ class AudioManager: ObservableObject {
     
     // 恢复所有音效
     func resumeAllSounds() {
+        guard soundEnabled else { return }
+        
         for (_, player) in soundPlayers {
             player.play()
         }
@@ -214,8 +226,42 @@ class AudioManager: ObservableObject {
         RunLoop.main.add(fadeTimer, forMode: .common)
     }
     
-    // 播放音效
+    // 检查音效是否是商店购买的音效
+    private func isShopSound(_ name: String) -> Bool {
+        // 检查名称是否以shop_开头
+        return name.hasPrefix("shop_")
+    }
+    
+    // 检查音效是否可以播放（满足冷却时间要求）
+    private func canPlaySound(_ name: String) -> Bool {
+        if let lastPlayTime = lastSoundPlayTimes[name] {
+            let elapsedTime = Date().timeIntervalSince(lastPlayTime)
+            if elapsedTime < soundCooldown {
+                print("音效 \(name) 在冷却中，剩余: \(soundCooldown - elapsedTime)秒")
+                return false
+            }
+        }
+        return true
+    }
+    
+    // 播放音效 - 受到系统设置控制
     func playSound(_ name: String) {
+        // 首先检查是否启用了音效
+        // 所有商店音效(shop_开头)或特殊标记的音效都受音效开关控制
+        if isShopSound(name) && !soundEnabled {
+            print("音效已禁用，不播放: \(name)")
+            return
+        }
+        
+        // 检查音效冷却时间，任何音效3秒内只能播放一次
+        if !canPlaySound(name) {
+            print("音效 \(name) 在冷却中，跳过播放")
+            return
+        }
+        
+        // 记录音效播放时间
+        lastSoundPlayTimes[name] = Date()
+        
         // 如果已经有播放器在播放这个音效，先停止它
         if let existingPlayer = soundPlayers[name] {
             existingPlayer.stop()
@@ -230,7 +276,16 @@ class AudioManager: ObservableObject {
         
         do {
             let player = try AVAudioPlayer(contentsOf: soundURL)
-            player.volume = 0.8 // 设置音效音量
+            
+            // 设置音效音量
+            // 商店音效使用系统音效音量设置，其他音效使用默认音量
+            if isShopSound(name) {
+                player.volume = Float(soundVolume)
+                print("播放商店音效: \(name)，音量: \(soundVolume)")
+            } else {
+                player.volume = 0.8 // 默认音效音量
+            }
+            
             player.prepareToPlay()
             player.play()
             
@@ -244,5 +299,46 @@ class AudioManager: ObservableObject {
         } catch {
             print("播放音效时出错: \(error.localizedDescription)")
         }
+    }
+    
+    // 系统设置改变时刷新所有播放中的音效音量
+    func refreshAllSoundVolumes() {
+        for (name, player) in soundPlayers {
+            if isShopSound(name) {
+                player.volume = Float(soundVolume)
+            }
+        }
+    }
+    
+    // 停止所有商店音效（主要用于场景切换）
+    func stopAllShopSounds() {
+        let shopSoundKeys = soundPlayers.keys.filter { isShopSound($0) }
+        
+        for key in shopSoundKeys {
+            if let player = soundPlayers[key] {
+                player.stop()
+                soundPlayers.removeValue(forKey: key)
+                print("停止商店音效: \(key)")
+            }
+        }
+    }
+    
+    // 停止特定的音效
+    func stopSound(_ name: String) {
+        if let player = soundPlayers[name] {
+            player.stop()
+            soundPlayers.removeValue(forKey: name)
+            print("停止音效: \(name)")
+        }
+    }
+    
+    // 清除某个特定音效的冷却
+    func clearSoundCooldown(_ name: String) {
+        lastSoundPlayTimes.removeValue(forKey: name)
+    }
+    
+    // 清除所有音效冷却
+    func clearAllSoundCooldowns() {
+        lastSoundPlayTimes.removeAll()
     }
 } 

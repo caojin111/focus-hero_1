@@ -172,12 +172,35 @@ class ShopManager: ObservableObject {
                     else if itemId == "effect_2" {
                         AnimationManager.shared.reloadConfigurationAndRefresh()
                         _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                        
+                        // 特殊处理：当装备闪电特效时，自动装备闪电音效（如果已购买）
+                        if let soundItem = purchasedItems.first(where: { $0.id == "sound_1" }) {
+                            if !equippedSounds.contains(where: { $0.id == "sound_1" }) {
+                                if let soundIndex = purchasedItems.firstIndex(where: { $0.id == "sound_1" }) {
+                                    purchasedItems[soundIndex].isEquipped = true
+                                    equippedSounds.append(purchasedItems[soundIndex])
+                                    
+                                    // 同步装备状态到shopItems
+                                    if let shopSoundIndex = shopItems.firstIndex(where: { $0.id == "sound_1" }) {
+                                        shopItems[shopSoundIndex].isEquipped = true
+                                    }
+                                    
+                                    print("已自动装备闪电音效，与闪电特效一同使用")
+                                }
+                            }
+                        }
                     }
-                }
-                
-                // 同步装备状态到shopItems
-                if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
-                    shopItems[shopIndex].isEquipped = true
+                    // 如果是effect_5，预加载旅人动画
+                    else if itemId == "effect_5" {
+                        AnimationManager.shared.reloadConfigurationAndRefresh()
+                        _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
+                        print("装备旅人特效，预加载旅人动画")
+                    }
+                    
+                    // 同步装备状态到shopItems
+                    if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
+                        shopItems[shopIndex].isEquipped = true
+                    }
                 }
             }
         case .sound:
@@ -185,6 +208,11 @@ class ShopManager: ObservableObject {
                 if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
                     purchasedItems[index].isEquipped = true
                     equippedSounds.append(purchasedItems[index])
+                    
+                    // 特殊处理：当装备闪电音效时，提醒用户可能需要装备闪电特效
+                    if itemId == "sound_1" {
+                        print("闪电音效已装备，需要搭配闪电特效使用才能听到")
+                    }
                 }
                 
                 // 同步装备状态到shopItems
@@ -273,6 +301,17 @@ class ShopManager: ObservableObject {
                 // 如果是effect_2，重新加载动画配置
                 else if itemId == "effect_2" {
                     AnimationManager.shared.reloadConfigurationAndRefresh()
+                    
+                    // 停止闪电音效播放
+                    AudioManager.shared.stopSound("shop_thunder")
+                    
+                    // 可选：提示用户可能也需要卸载对应的声音
+                    print("已卸载闪电特效，闪电音效将不再播放")
+                }
+                // 如果是effect_5，重新加载动画配置
+                else if itemId == "effect_5" {
+                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                    print("已卸载旅人特效")
                 }
                 
                 // 同步状态到shopItems
@@ -288,6 +327,13 @@ class ShopManager: ObservableObject {
                 // 同步状态到shopItems
                 if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
                     shopItems[shopIndex].isEquipped = false
+                }
+                
+                // 如果是sound_1，停止任何正在播放的闪电音效
+                if itemId == "sound_1" {
+                    // 停止闪电音效播放
+                    AudioManager.shared.stopSound("shop_thunder")
+                    print("卸载sound_1，停止闪电音效播放")
                 }
             }
         case .bgm:
@@ -332,23 +378,14 @@ class ShopManager: ObservableObject {
         objectWillChange.send()
     }
     
+    // 方便检查商品是否被装备
     func isItemEquipped(itemId: String) -> Bool {
-        // 首先检查各个装备数组
-        if equippedEffects.contains(where: { $0.id == itemId }) {
+        // 检查购买的商品中是否有这个ID，且isEquipped为true
+        if let item = purchasedItems.first(where: { $0.id == itemId }),
+           let isEquipped = item.isEquipped, isEquipped {
             return true
         }
-        if equippedSounds.contains(where: { $0.id == itemId }) {
-            return true
-        }
-        if let bgm = equippedBGM, bgm.id == itemId {
-            return true
-        }
-        if let background = equippedBackground, background.id == itemId {
-            return true
-        }
-        
-        // 如果在装备数组中没找到，则回退到检查purchasedItems
-        return purchasedItems.first(where: { $0.id == itemId })?.isEquipped ?? false
+        return false
     }
     
     func getEquippedItems(ofType type: ShopItem.ItemType) -> [ShopItem] {

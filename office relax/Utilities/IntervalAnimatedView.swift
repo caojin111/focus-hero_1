@@ -13,6 +13,10 @@ struct IntervalAnimatedView: View {
     @State private var animationCompleted: Bool = false
     @State private var isPaused: Bool = false
     @State private var lastAnimationStart: Date = Date()
+    @State private var isInWorkMode: Bool = true  // 默认为工作模式
+    
+    // 添加用于监测是否真正显示的属性
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     
     init(animationKey: String, interval: TimeInterval = 5.0, playbackCompleted: (() -> Void)? = nil) {
         self.animationKey = animationKey
@@ -33,9 +37,27 @@ struct IntervalAnimatedView: View {
                     lastAnimationStart = Date()
                     print("开始播放动画 \(animationKey) 时间: \(lastAnimationStart)")
                     
+                    // 如果是闪电动画且用户装备了闪电音效，同时播放音效
+                    if animationKey == "effect.lightning" {
+                        // 只有当闪电特效真正装备且显示时才播放
+                        if isActuallyDisplayed() {
+                            playLightningSoundIfEquipped()
+                        }
+                    }
+                    
                     // 作为备份，设置一个定时器确保在动画完成后触发间隔
                     setupBackupCompletionTimer()
                 }
+                .background(GeometryReader { geo in
+                    // 使用GeometryReader检测视图是否真正可见
+                    Color.clear
+                        .onAppear {
+                            if geo.size.width > 0 && geo.size.height > 0 {
+                                // 视图有实际尺寸，可能真正可见
+                                print("动画视图 \(animationKey) 有实际尺寸")
+                            }
+                        }
+                })
             } else {
                 // 动画间隔期间不显示任何内容
                 Color.clear
@@ -72,12 +94,88 @@ struct IntervalAnimatedView: View {
                 print("恢复动画 \(animationKey)")
                 resumeAnimation()
             }
+            
+            // 监听工作/休息模式切换
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("WorkModeChanged"),
+                object: nil,
+                queue: .main
+            ) { notification in
+                if let isWorkMode = notification.userInfo?["isWorkMode"] as? Bool {
+                    self.isInWorkMode = isWorkMode
+                    print("工作模式变更通知接收: \(isWorkMode ? "工作模式" : "休息模式")")
+                    
+                    // 如果闪电动画不再显示，立即停止相关音效
+                    if animationKey == "effect.lightning" && !isWorkMode {
+                        AudioManager.shared.stopAllShopSounds()
+                    }
+                }
+            }
         }
         .onDisappear {
             // 清理计时器和通知
             cleanupTimers()
             NotificationCenter.default.removeObserver(self)
         }
+    }
+    
+    // 检查这个动画是否真正被显示（对于闪电动画特别处理）
+    private func isActuallyDisplayed() -> Bool {
+        if animationKey == "effect.lightning" {
+            // 1. 首先检查是否是工作模式，只有在工作模式才显示闪电特效
+            guard isInWorkMode else {
+                return false
+            }
+            
+            // 2. 检查是否装备了闪电特效（effect_2）
+            return ShopManager.shared.isItemEquipped(itemId: "effect_2")
+        }
+        return true
+    }
+    
+    // 检查用户是否装备了闪电音效并播放
+    private func playLightningSoundIfEquipped() {
+        // 确保只有当前视图是闪电动画时才播放音效
+        guard animationKey == "effect.lightning" else { return }
+        
+        // 确保闪电特效(effect_2)真正显示时才考虑播放
+        guard isActuallyDisplayed() else { return }
+        
+        // 检查用户是否已装备sound_1音效
+        let shopManager = ShopManager.shared
+        
+        // 注意：不需要在这里检查系统音效设置和音效冷却时间
+        // AudioManager.playSound方法中已经包含对系统音效设置和冷却时间的检查
+        // 所有以shop_开头的音效文件都会受到系统音效开关和音量控制
+        // 同时也会遵循3秒冷却规则
+        
+        // 1. 检查是否通过正常方式装备
+        if shopManager.isItemEquipped(itemId: "sound_1") {
+            // 播放闪电音效
+            AudioManager.shared.playSound("shop_thunder")
+            print("播放闪电音效 (通过normal方式)")
+            return
+        }
+        
+        // 2. 如果正常方式失败，尝试备用方式检查
+        // 检查商品是否已购买
+        if let soundItem = shopManager.purchasedItems.first(where: { $0.id == "sound_1" }),
+           let isEquipped = soundItem.isEquipped, isEquipped {
+            // 商品已购买且标记为已装备
+            AudioManager.shared.playSound("shop_thunder")
+            print("播放闪电音效 (通过purchasedItems检查)")
+            return
+        }
+        
+        // 3. 直接检查equippedSounds数组
+        if shopManager.equippedSounds.contains(where: { $0.id == "sound_1" }) {
+            AudioManager.shared.playSound("shop_thunder")
+            print("播放闪电音效 (通过equippedSounds检查)")
+            return
+        }
+        
+        // 移除备用方案，确保只有在sound_1真正装备时才播放音效
+        print("闪电音效未播放：sound_1未装备")
     }
     
     // 开始播放动画
@@ -88,6 +186,11 @@ struct IntervalAnimatedView: View {
                 print("启动动画 \(animationKey) 播放")
                 shouldPlay = true
                 lastAnimationStart = Date()
+                
+                // 只有当闪电特效真正显示时才播放音效
+                if animationKey == "effect.lightning" && shouldPlay && isActuallyDisplayed() {
+                    playLightningSoundIfEquipped()
+                }
             }
         }
         if let timer = timer {
@@ -142,6 +245,11 @@ struct IntervalAnimatedView: View {
                 print("间隔结束，重新播放动画 \(animationKey)")
                 shouldPlay = true
                 lastAnimationStart = Date()
+                
+                // 只有当闪电特效真正显示时才播放音效
+                if animationKey == "effect.lightning" && shouldPlay && isActuallyDisplayed() {
+                    playLightningSoundIfEquipped()
+                }
                 
                 // 立即设置备用计时器
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

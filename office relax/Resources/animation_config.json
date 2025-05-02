@@ -26,7 +26,7 @@
       "relax": {
         "frames": ["hero_relax_1", "hero_relax_2", "hero_relax_3", "hero_relax_4", "hero_relax_5"],
         "fps": 2,
-        "scale": 0.45,
+        "scale": 0.38,
         "offset": {
           "x": 0,
           "y": 0
@@ -93,6 +93,19 @@
         "loop": true
       }
     },
+    "traveller": {
+      "sit": {
+        "frames": ["traveller_1", "traveller_2", "traveller_3", "traveller_4"],
+        "fps": 1.5,
+        "scale": 0.4,
+        "flipped": true,
+        "offset": {
+          "x": 200,
+          "y": -2
+        },
+        "loop": true
+      }
+    },
     "items": {
       "clothing": {
         "scale": 0.7,
@@ -131,7 +144,7 @@
         "offset_y": -60,
         "spacing": 0
       },
-      "active_animations": ["hero.relax", "fireplace.burn"]
+      "active_animations": ["hero.relax", "fireplace.burn", "traveller.sit"]
     },
     "victory": {
       "hero_position": {
@@ -152,7 +165,8 @@
       "fireplace": "flame.fill",
       "clothing": "tshirt.fill",
       "accessory": "eyeglasses",
-      "effect": "sparkles"
+      "effect": "sparkles",
+      "traveller": "figure.walk"
     },
     "fallback_size": {
       "width": 45,

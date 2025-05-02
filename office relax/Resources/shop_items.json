@@ -16,11 +16,35 @@
         "type": "effect"
     },
     {
+        "id": "effect_3",
+        "name": "Hammer girl",
+        "description": "Change your hero into a hammer girl!",
+        "price": 0,
+        "imageName": "effect_hammer",
+        "type": "effect"
+    },
+    {
+        "id": "effect_4",
+        "name": "BOSS HP",
+        "description": "Show the boss's HP bar!",
+        "price": 0,
+        "imageName": "hp",
+        "type": "effect"
+    },
+    {
+        "id": "effect_5",
+        "name": "Traveller",
+        "description": "A traveller will company you when you resting.",
+        "price": 0,
+        "imageName": "traveller",
+        "type": "effect"
+    },
+    {
         "id": "sound_1",
-        "name": "胜利音效",
-        "description": "战斗胜利时的欢呼声。",
-        "price": 80,
-        "imageName": "sound_victory",
+        "name": "lightning sound",
+        "description": "let your lightning magic sounds to be heard",
+        "price": 0,
+        "imageName": "sound_lightning",
         "type": "sound"
     },
     {
