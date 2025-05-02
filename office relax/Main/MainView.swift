@@ -395,6 +395,26 @@ struct MainView: View {
             // 初始化入场动画状态
             isHeroEntryCompleted = false
             
+            // 监听effect_3状态变更通知
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("Effect3StatusChanged"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                // 使用强制刷新View的方式来更新UI
+                DispatchQueue.main.async {
+                    // 这里只是触发视图刷新，不需要更改任何状态
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        // 由于我们在opacity中使用了isEffect3Equipped()，
+                        // 触发一次动画就会重新评估这个表达式，从而刷新UI
+                        if self.isWorkMode {
+                            // 触发短暂的动画，促使视图重新渲染
+                            self.isHeroEntryCompleted = self.isHeroEntryCompleted
+                        }
+                    }
+                }
+            }
+            
             // 延迟加载内容，防止穿帮
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 // 预加载所有动画资源，但保持黑屏
@@ -404,6 +424,12 @@ struct MainView: View {
                     _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                     _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                     _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                    
+                    // 如果装备了effect_3，预加载hammer girl动画
+                    if isEffect3Equipped() {
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                    }
                 } else {
                     _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                     _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
@@ -424,6 +450,9 @@ struct MainView: View {
             // 清理定时器
             entryAnimationTimer?.invalidate()
             entryAnimationTimer = nil
+            
+            // 移除通知观察者
+            NotificationCenter.default.removeObserver(self)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
@@ -449,6 +478,12 @@ struct MainView: View {
                         _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                         _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                         _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                        
+                        // 如果装备了effect_3，预加载hammer girl动画
+                        if isEffect3Equipped() {
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                        }
                     }
                     
                     // 延迟一点时间后关闭StartFocusView，让主视图内容先准备好
@@ -551,6 +586,12 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                
+                // 如果装备了effect_3，预加载hammer girl动画
+                if isEffect3Equipped() {
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                }
                 
                 // 发送工作模式变更通知
                 NotificationCenter.default.post(
@@ -662,27 +703,59 @@ struct MainView: View {
                                     }
                             }
                             
-                            // 入场动画
-                            ConfigurableAnimatedView(animationKey: "hero.run") { 
-                                print("行走动画完成回调触发")
-                                DispatchQueue.main.async {
-                                    withAnimation(.easeIn(duration: 0.2)) {
-                                        print("入场动画完成，切换到攻击动画")
-                                        isHeroEntryCompleted = true
-                                        entryAnimationTimer?.invalidate()
-                                        entryAnimationTimer = nil
+                            // 入场动画 - 当装备effect_3时显示hammer girl，否则显示普通hero
+                            Group {
+                                // 普通英雄入场动画
+                                ConfigurableAnimatedView(animationKey: "hero.run") { 
+                                    print("普通英雄行走动画完成回调触发")
+                                    DispatchQueue.main.async {
+                                        withAnimation(.easeIn(duration: 0.2)) {
+                                            print("入场动画完成，切换到攻击动画")
+                                            isHeroEntryCompleted = true
+                                            entryAnimationTimer?.invalidate()
+                                            entryAnimationTimer = nil
+                                        }
+                                    }
+                                }
+                                .opacity(isHeroEntryCompleted || isEffect3Equipped() ? 0.0 : 1.0)
+                                
+                                // hammer girl入场动画（当装备effect_3时显示）
+                                ConfigurableAnimatedView(animationKey: "hammer.run") { 
+                                    print("Hammer girl行走动画完成回调触发")
+                                    DispatchQueue.main.async {
+                                        withAnimation(.easeIn(duration: 0.2)) {
+                                            print("Hammer girl入场动画完成，切换到攻击动画")
+                                            isHeroEntryCompleted = true
+                                            entryAnimationTimer?.invalidate()
+                                            entryAnimationTimer = nil
+                                        }
+                                    }
+                                }
+                                .opacity(!isHeroEntryCompleted && isEffect3Equipped() ? 1.0 : 0.0)
+                                .onAppear {
+                                    if isEffect3Equipped() {
+                                        // 预加载hammer动画
+                                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
                                     }
                                 }
                             }
-                            .opacity(isHeroEntryCompleted ? 0.0 : 1.0)
                             .onAppear {
                                 startEntryAnimationBackupTimer()
                             }
                             
-                            // 攻击动画
-                            ConfigurableAnimatedView(animationKey: "hero.attack")
-                                .opacity(isHeroEntryCompleted ? 1.0 : 0.0)
-                                .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
+                            // 攻击动画 - 同样根据effect_3装备状态显示不同的攻击动画
+                            Group {
+                                // 普通英雄攻击动画
+                                ConfigurableAnimatedView(animationKey: "hero.attack")
+                                    .opacity(isHeroEntryCompleted && !isEffect3Equipped() ? 1.0 : 0.0)
+                                    .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
+                                
+                                // hammer girl攻击动画
+                                ConfigurableAnimatedView(animationKey: "hammer.attack")
+                                    .opacity(isHeroEntryCompleted && isEffect3Equipped() ? 1.0 : 0.0)
+                                    .animation(.easeIn(duration: 0.2), value: isHeroEntryCompleted)
+                            }
                         }
                     } else {
                         // 休息模式区域 - 所有动画预加载
@@ -744,6 +817,12 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                
+                // 如果装备了effect_3，预加载hammer girl动画
+                if isEffect3Equipped() {
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                }
             } else {
                 // 切换到休息模式，停止所有商店音效，尤其是闪电音效
                 AudioManager.shared.stopAllShopSounds()
@@ -760,8 +839,11 @@ struct MainView: View {
         // 确保之前的定时器被取消
         entryAnimationTimer?.invalidate()
         
+        // 根据effect_3装备状态选择不同的动画
+        let animationKey = isEffect3Equipped() ? "hammer.run" : "hero.run"
+        
         // 获取动画信息
-        let animInfo = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+        let animInfo = AnimationManager.shared.getAnimationInfo(for: animationKey)
         // 根据帧数和fps计算动画持续时间，只加一点缓冲
         let framesCount = Double(animInfo?.frames.count ?? 4)
         let fps = animInfo?.fps ?? 5.0
@@ -810,6 +892,12 @@ struct MainView: View {
     private func isEffect5Equipped() -> Bool {
         return ShopManager.shared.getEquippedItems(ofType: .effect)
             .contains(where: { $0.id == "effect_5" })
+    }
+    
+    // 检查是否装备了effect_3特效
+    private func isEffect3Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_3" })
     }
     
     var bottomButtons: some View {
@@ -1018,6 +1106,12 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                
+                // 如果装备了effect_3，预加载hammer girl动画
+                if isEffect3Equipped() {
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                }
                 
                 // 先显示 StartFocusView - 保持黑屏，在StartFocusView完成后再淡出
                 showStartFocus = true

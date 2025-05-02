@@ -34,6 +34,30 @@
         "loop": true
       }
     },
+    "hammer": {
+      "run": {
+        "frames": ["hammer_run_1", "hammer_run_2", "hammer_run_3", "hammer_run_4", "hammer_run_5", "hammer_run_6", "hammer_run_7", "hammer_run_8"],
+        "fps": 6,
+        "scale": 1.5,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "loop": false
+      },
+      "attack": {
+        "frames": ["hammer_attack_1", "hammer_attack_2", "hammer_attack_3", "hammer_attack_4", "hammer_attack_5", 
+                  "hammer_attack_6", "hammer_attack_7", "hammer_attack_8", "hammer_attack_9", "hammer_attack_10",
+                  "hammer_attack_11", "hammer_attack_12"],
+        "fps": 8.5,
+        "scale": 1.5,
+        "offset": {
+          "x": 30,
+          "y": 0
+        },
+        "loop": true
+      }
+    },
     "boss": {
       "idle": {
         "frames": ["boss_1", "boss_2", "boss_3", "boss_4", "boss_5", "boss_6", "boss_7", "boss_8", "boss_9", "boss_10", "boss_11", "boss_12"],
@@ -133,7 +157,7 @@
         "offset_y": -60,
         "spacing": 0
       },
-      "active_animations": ["hero.run", "hero.attack", "boss.idle", "effect.wizard_attack", "effect.lightning"]
+      "active_animations": ["hero.run", "hero.attack", "hammer.run", "hammer.attack", "boss.idle", "effect.wizard_attack", "effect.lightning"]
     },
     "relax": {
       "hero_position": {
@@ -166,7 +190,8 @@
       "clothing": "tshirt.fill",
       "accessory": "eyeglasses",
       "effect": "sparkles",
-      "traveller": "figure.walk"
+      "traveller": "figure.walk",
+      "hammer": "hammer.fill"
     },
     "fallback_size": {
       "width": 45,

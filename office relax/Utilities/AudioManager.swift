@@ -71,38 +71,78 @@ class AudioManager: ObservableObject {
     
     // 准备音频播放器
     private func prepareAudioPlayers() {
+        // 检查是否装备了 bgm_2
+        let shopManager = ShopManager.shared
+        let isWorkBGM2Equipped = shopManager.equippedBGMs.contains(where: { $0.id == "bgm_2" })
+        
         // 加载工作模式音乐
-        if let workMusicURL = Bundle.main.url(forResource: "work_music", withExtension: "mp3") {
-            do {
-                workModePlayer = try AVAudioPlayer(contentsOf: workMusicURL)
-                workModePlayer?.numberOfLoops = -1 // 无限循环
-                workModePlayer?.volume = musicVolume
-                workModePlayer?.prepareToPlay()
-            } catch {
-                print("无法加载工作模式音乐: \(error.localizedDescription)")
-            }
-        } else {
-            print("未找到工作模式音乐文件")
-        }
+        let workMusicFile = isWorkBGM2Equipped ? "work_music_2" : "work_music"
+        preparePlayer(forMode: .work, withFile: workMusicFile)
+        
+        // 检查是否装备了 bgm_1
+        let isRelaxBGM1Equipped = shopManager.equippedBGMs.contains(where: { $0.id == "bgm_1" })
         
         // 加载休息模式音乐
-        if let relaxMusicURL = Bundle.main.url(forResource: "relax_music", withExtension: "mp3") {
+        let relaxMusicFile = isRelaxBGM1Equipped ? "relax_music_2" : "relax_music"
+        preparePlayer(forMode: .relax, withFile: relaxMusicFile)
+    }
+    
+    // 定义播放模式枚举
+    private enum PlayMode {
+        case work
+        case relax
+    }
+    
+    // 准备特定模式的播放器
+    private func preparePlayer(forMode mode: PlayMode, withFile fileName: String) {
+        // 如果当前播放器正在播放，不要中断它
+        switch mode {
+        case .work:
+            if workModePlayer?.isPlaying == true {
+                return
+            }
+        case .relax:
+            if relaxModePlayer?.isPlaying == true {
+                return
+            }
+        }
+        
+        if let musicURL = Bundle.main.url(forResource: fileName, withExtension: "mp3") {
             do {
-                relaxModePlayer = try AVAudioPlayer(contentsOf: relaxMusicURL)
-                relaxModePlayer?.numberOfLoops = -1 // 无限循环
-                relaxModePlayer?.volume = musicVolume
-                relaxModePlayer?.prepareToPlay()
+                switch mode {
+                case .work:
+                    workModePlayer = try AVAudioPlayer(contentsOf: musicURL)
+                    workModePlayer?.numberOfLoops = -1 // 无限循环
+                    workModePlayer?.volume = musicVolume
+                    workModePlayer?.prepareToPlay()
+                case .relax:
+                    relaxModePlayer = try AVAudioPlayer(contentsOf: musicURL)
+                    relaxModePlayer?.numberOfLoops = -1 // 无限循环
+                    relaxModePlayer?.volume = musicVolume
+                    relaxModePlayer?.prepareToPlay()
+                }
+                print("成功准备\(mode == .work ? "工作" : "休息")模式音乐: \(fileName)")
             } catch {
-                print("无法加载休息模式音乐: \(error.localizedDescription)")
+                print("无法加载\(mode == .work ? "工作" : "休息")模式音乐: \(error.localizedDescription)")
             }
         } else {
-            print("未找到休息模式音乐文件")
+            print("未找到\(mode == .work ? "工作" : "休息")模式音乐文件: \(fileName)")
         }
     }
     
     // 播放工作模式音乐
     func playWorkMusic() {
         guard isMusicEnabled else { return }
+        
+        // 检查是否装备了 bgm_2，准备相应的播放器
+        let shopManager = ShopManager.shared
+        let isWorkBGM2Equipped = shopManager.equippedBGMs.contains(where: { $0.id == "bgm_2" })
+        let workMusicFile = isWorkBGM2Equipped ? "work_music_2" : "work_music"
+        
+        // 如果当前播放器为空或使用了不同的音乐文件，则重新准备
+        if workModePlayer == nil || workModePlayer?.url?.lastPathComponent != "\(workMusicFile).mp3" {
+            preparePlayer(forMode: .work, withFile: workMusicFile)
+        }
         
         // 渐弱停止休息音乐
         fadeOutAndStop(player: relaxModePlayer) {
@@ -116,6 +156,16 @@ class AudioManager: ObservableObject {
     // 播放休息模式音乐
     func playRelaxMusic() {
         guard isMusicEnabled else { return }
+        
+        // 检查是否装备了 bgm_1，准备相应的播放器
+        let shopManager = ShopManager.shared
+        let isRelaxBGM1Equipped = shopManager.equippedBGMs.contains(where: { $0.id == "bgm_1" })
+        let relaxMusicFile = isRelaxBGM1Equipped ? "relax_music_2" : "relax_music"
+        
+        // 如果当前播放器为空或使用了不同的音乐文件，则重新准备
+        if relaxModePlayer == nil || relaxModePlayer?.url?.lastPathComponent != "\(relaxMusicFile).mp3" {
+            preparePlayer(forMode: .relax, withFile: relaxMusicFile)
+        }
         
         // 渐弱停止工作音乐
         fadeOutAndStop(player: workModePlayer) {
@@ -340,5 +390,33 @@ class AudioManager: ObservableObject {
     // 清除所有音效冷却
     func clearAllSoundCooldowns() {
         lastSoundPlayTimes.removeAll()
+    }
+    
+    // 在装备BGM时调用此方法刷新播放器
+    func refreshBGMPlayers() {
+        // 检查当前模式并刷新对应的播放器
+        if isWorkMode {
+            let shopManager = ShopManager.shared
+            let isWorkBGM2Equipped = shopManager.equippedBGMs.contains(where: { $0.id == "bgm_2" })
+            let workMusicFile = isWorkBGM2Equipped ? "work_music_2" : "work_music"
+            
+            // 停止当前播放的音乐
+            fadeOutAndStop(player: workModePlayer) {
+                // 重新准备并播放
+                self.preparePlayer(forMode: .work, withFile: workMusicFile)
+                self.fadeInAndPlay(player: self.workModePlayer)
+            }
+        } else {
+            let shopManager = ShopManager.shared
+            let isRelaxBGM1Equipped = shopManager.equippedBGMs.contains(where: { $0.id == "bgm_1" })
+            let relaxMusicFile = isRelaxBGM1Equipped ? "relax_music_2" : "relax_music"
+            
+            // 停止当前播放的音乐
+            fadeOutAndStop(player: relaxModePlayer) {
+                // 重新准备并播放
+                self.preparePlayer(forMode: .relax, withFile: relaxMusicFile)
+                self.fadeInAndPlay(player: self.relaxModePlayer)
+            }
+        }
     }
 } 

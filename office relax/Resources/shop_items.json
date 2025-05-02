@@ -57,18 +57,18 @@
     },
     {
         "id": "bgm_1",
-        "name": "战斗BGM",
-        "description": "激昂的战斗背景音乐。",
-        "price": 200,
-        "imageName": "bgm_battle",
+        "name": "peaceful mind",
+        "description": "A peaceful countryside background music.",
+        "price": 0,
+        "imageName": "bgm_countryside",
         "type": "bgm"
     },
     {
         "id": "bgm_2",
-        "name": "史诗BGM",
-        "description": "史诗级的战斗音乐。",
-        "price": 250,
-        "imageName": "bgm_epic",
+        "name": "don't be afraid",
+        "description": "A horror background music.",
+        "price": 0,
+        "imageName": "bgm_horror",
         "type": "bgm"
     },
     {

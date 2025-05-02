@@ -133,8 +133,27 @@ struct ShopView: View {
                         // 装备商品
                         shopManager.equipItem(itemId: item.id)
                         
-                        // 立即刷新UI状态
-                        if item.id == "sound_1" {
+                        // 特殊处理 BGM 类型或 sound_1
+                        if item.type == .bgm {
+                            // 确保 shopItems 中的状态被更新
+                            if let shopIndex = shopManager.shopItems.firstIndex(where: { $0.id == item.id }) {
+                                shopManager.shopItems[shopIndex].isEquipped = true
+                            }
+                            
+                            // 确保 purchasedItems 中的状态被更新
+                            if let purchasedIndex = shopManager.purchasedItems.firstIndex(where: { $0.id == item.id }) {
+                                shopManager.purchasedItems[purchasedIndex].isEquipped = true
+                            }
+                            
+                            // 保存装备状态
+                            shopManager.saveEquippedItems()
+                            
+                            // 强制触发 UI 更新
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                shopManager.objectWillChange.send()
+                            }
+                        }
+                        else if item.id == "sound_1" {
                             // 为sound_1特别处理，确保它显示为已装备状态
                             print("特别处理sound_1装备状态")
                             
@@ -182,6 +201,28 @@ struct ShopView: View {
                     onConfirm: {
                         audioManager.playSound("click")
                         shopManager.unequipItem(itemId: item.id)
+                        
+                        // 特殊处理 BGM 类型
+                        if item.type == .bgm {
+                            // 确保 shopItems 中的状态被更新
+                            if let shopIndex = shopManager.shopItems.firstIndex(where: { $0.id == item.id }) {
+                                shopManager.shopItems[shopIndex].isEquipped = false
+                            }
+                            
+                            // 确保 purchasedItems 中的状态被更新
+                            if let purchasedIndex = shopManager.purchasedItems.firstIndex(where: { $0.id == item.id }) {
+                                shopManager.purchasedItems[purchasedIndex].isEquipped = false
+                            }
+                            
+                            // 保存装备状态
+                            shopManager.saveEquippedItems()
+                            
+                            // 强制触发 UI 更新
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                shopManager.objectWillChange.send()
+                            }
+                        }
+                        
                         selectedItem = nil
                         showUnequipDialog = false
                         shopManager.objectWillChange.send()

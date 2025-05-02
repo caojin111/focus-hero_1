@@ -10,6 +10,8 @@
 		031A56B32DBCEF060058A36B /* onboarding_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A56B22DBCEF060058A36B /* onboarding_music.mp3 */; };
 		031A56FD2DBCF43C0058A36B /* stinger.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A56FC2DBCF43C0058A36B /* stinger.mp3 */; };
 		031A57072DBD31070058A36B /* click.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A57062DBD31070058A36B /* click.mp3 */; };
+		03698E132DC51A140075EF8B /* relax_music_2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 03698E122DC51A140075EF8B /* relax_music_2.mp3 */; };
+		03698E152DC51A380075EF8B /* work_music_2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 03698E142DC51A380075EF8B /* work_music_2.mp3 */; };
 		037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A002DBBAB1D0014996A /* work_music.mp3 */; };
 		037E0A052DBBAB910014996A /* relax_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A042DBBAB910014996A /* relax_music.mp3 */; };
 		039546002DC3B0F50077ACB6 /* shop_thunder.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 039545FF2DC3B0F50077ACB6 /* shop_thunder.mp3 */; };
@@ -50,6 +52,8 @@
 		031A56B22DBCEF060058A36B /* onboarding_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = onboarding_music.mp3; sourceTree = "<group>"; };
 		031A56FC2DBCF43C0058A36B /* stinger.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = stinger.mp3; sourceTree = "<group>"; };
 		031A57062DBD31070058A36B /* click.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = click.mp3; sourceTree = "<group>"; };
+		03698E122DC51A140075EF8B /* relax_music_2.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = relax_music_2.mp3; sourceTree = "<group>"; };
+		03698E142DC51A380075EF8B /* work_music_2.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = work_music_2.mp3; sourceTree = "<group>"; };
 		037E0A002DBBAB1D0014996A /* work_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = work_music.mp3; sourceTree = "<group>"; };
 		037E0A042DBBAB910014996A /* relax_music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = relax_music.mp3; sourceTree = "<group>"; };
 		039545FF2DC3B0F50077ACB6 /* shop_thunder.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = shop_thunder.mp3; sourceTree = "<group>"; };
@@ -123,6 +127,8 @@
 				031A56B22DBCEF060058A36B /* onboarding_music.mp3 */,
 				037E0A042DBBAB910014996A /* relax_music.mp3 */,
 				037E0A002DBBAB1D0014996A /* work_music.mp3 */,
+				03698E142DC51A380075EF8B /* work_music_2.mp3 */,
+				03698E122DC51A140075EF8B /* relax_music_2.mp3 */,
 				03A2AEB12DB652B10085EA8D /* office relax */,
 				03A2AEC02DB652B20085EA8D /* office relaxTests */,
 				03A2AECA2DB652B20085EA8D /* office relaxUITests */,
@@ -262,11 +268,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				03698E132DC51A140075EF8B /* relax_music_2.mp3 in Resources */,
 				031A57072DBD31070058A36B /* click.mp3 in Resources */,
 				031A56B32DBCEF060058A36B /* onboarding_music.mp3 in Resources */,
 				037E0A052DBBAB910014996A /* relax_music.mp3 in Resources */,
 				037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */,
 				039546002DC3B0F50077ACB6 /* shop_thunder.mp3 in Resources */,
+				03698E152DC51A380075EF8B /* work_music_2.mp3 in Resources */,
 				031A56FD2DBCF43C0058A36B /* stinger.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
