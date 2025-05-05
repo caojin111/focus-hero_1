@@ -15,6 +15,14 @@ struct ShopView: View {
     
     var body: some View {
         ZStack {
+            // 全屏背景图片
+            Image("shop_bg")
+                .resizable()
+                .scaledToFill()
+                .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                .opacity(0.95)
+                .edgesIgnoringSafeArea(.all)
+            
             // 背景遮罩
             Color.black.opacity(0.5)
                 .edgesIgnoringSafeArea(.all)
@@ -100,7 +108,7 @@ struct ShopView: View {
                 }
             }
             .frame(width: UIScreen.main.bounds.width * 0.9, height: UIScreen.main.bounds.height * 0.8)
-            .background(Color.black.opacity(0.8))
+            .background(Color.black.opacity(0.7))
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)

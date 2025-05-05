@@ -16,130 +16,132 @@ struct GiftPackageView: View {
     
     var body: some View {
         ZStack {
-            // 背景遮罩
-            Color.black.opacity(0.7)
+            // 使用shop_bg.png作为整个界面的背景
+            Image("shop_bg")
+                .resizable()
+                .scaledToFill()
+                .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                .scaleEffect(1.2)
                 .edgesIgnoringSafeArea(.all)
             
-            // 礼包页面和内容组合
-            ZStack {
-                // 使用礼包宣传页面图片作为背景
-                Image("gift page")
+            // 使用礼包宣传页面图片作为内容背景
+            Image("gift page")
+                .resizable()
+                .scaledToFit()
+                .frame(width: UIScreen.main.bounds.width * 1.05)
+                .offset(y: 20)
+            
+            // 礼包内容
+            VStack(spacing: 0) {
+                // 使用空间推动内容到底部
+                Spacer().frame(height: UIScreen.main.bounds.height * 0.22 + 20)
+                
+                Spacer()
+                
+                // 包含内容 - 向上移动80像素，向右移动100像素
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("包含内容:")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.bottom, 5)
+                    
+                    // 礼包内容列表
+                    ForEach(giftManager.starterPackage.includedItems, id: \.self) { itemId in
+                        if let item = shopManager.shopItems.first(where: { $0.id == itemId }) {
+                            HStack {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 6, height: 6)
+                                
+                                Text(item.name)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+                .offset(x: 100, y: -80) // 添加向右100像素，向上80像素的偏移
+                
+                // 价格和购买按钮 - 向上移动60像素
+                VStack(spacing: 15) {
+                    // 检查礼包是否已购买，根据是否包含礼包中的任一物品判断
+                    let isPackagePurchased = self.isPackagePurchased()
+                    
+                    Button(action: {
+                        if !isPackagePurchased {
+                        audioManager.playSound("click")
+                        showConfirmation = true
+                        }
+                    }) {
+                        HStack {
+                            Text(isPackagePurchased ? "Purchased" : "立即购买")
+                                .font(.system(size: 16, weight: .bold))
+                            
+                            if !isPackagePurchased {
+                            Text(giftManager.starterPackage.priceString)
+                                .font(.system(size: 16, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .frame(width: 150)
+                        .padding(.vertical, 10)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: isPackagePurchased ? 
+                                                  [Color.gray.opacity(0.6), Color.gray.opacity(0.8)] : 
+                                                  [Color.blue, Color.purple]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(20)
+                    }
+                    .disabled(giftManager.isLoading || isPackagePurchased)
+                    .overlay(
+                        Group {
+                            if giftManager.isLoading && !isPackagePurchased {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.2)
+                            }
+                        }
+                    )
+                    
+                    // 恢复购买按钮
+                    if !isPackagePurchased {
+                    Button(action: {
+                        audioManager.playSound("click")
+                            restorePackage()
+                    }) {
+                        Text("恢复购买")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .disabled(giftManager.isLoading)
+                    }
+                }
+                .padding(.bottom, 30)
+                .offset(y: -60) // 添加向上60像素的偏移
+            }
+            .frame(width: UIScreen.main.bounds.width * 0.9)
+            
+            // 新增：退出按钮使用ZStack绝对定位到右上角
+            Button(action: {
+                audioManager.playSound("click")
+                presentationMode.wrappedValue.dismiss()
+            }) {
+                Image("quit")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: UIScreen.main.bounds.width * 0.9)
-                
-                // 礼包内容
-                VStack(spacing: 0) {
-                    // 关闭按钮
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            audioManager.playSound("click")
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
-                                .padding(15)
-                        }
-                    }
-                    
-                    // 使用空间推动内容到底部
-                    Spacer().frame(height: UIScreen.main.bounds.height * 0.22 + 20)
-                    
-                    Spacer()
-                    
-                    // 包含内容 - 放在底部
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("包含内容:")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.bottom, 5)
-                        
-                        // 礼包内容列表
-                        ForEach(giftManager.starterPackage.includedItems, id: \.self) { itemId in
-                            if let item = shopManager.shopItems.first(where: { $0.id == itemId }) {
-                                HStack {
-                                    Circle()
-                                        .fill(Color.green)
-                                        .frame(width: 6, height: 6)
-                                    
-                                    Text(item.name)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
-                    
-                    // 价格和购买按钮 - 使用固定位置
-                    VStack(spacing: 15) {
-                        // 检查礼包是否已购买，根据是否包含礼包中的任一物品判断
-                        let isPackagePurchased = self.isPackagePurchased()
-                        
-                        Button(action: {
-                            if !isPackagePurchased {
-                            audioManager.playSound("click")
-                            showConfirmation = true
-                            }
-                        }) {
-                            HStack {
-                                Text(isPackagePurchased ? "Purchased" : "立即购买")
-                                    .font(.system(size: 16, weight: .bold))
-                                
-                                if !isPackagePurchased {
-                                Text(giftManager.starterPackage.priceString)
-                                    .font(.system(size: 16, weight: .bold))
-                                }
-                            }
-                            .foregroundColor(.white)
-                            .frame(width: 150)
-                            .padding(.vertical, 10)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: isPackagePurchased ? 
-                                                      [Color.gray.opacity(0.6), Color.gray.opacity(0.8)] : 
-                                                      [Color.blue, Color.purple]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(20)
-                        }
-                        .disabled(giftManager.isLoading || isPackagePurchased)
-                        .overlay(
-                            Group {
-                                if giftManager.isLoading && !isPackagePurchased {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                        .scaleEffect(1.2)
-                                }
-                            }
-                        )
-                        
-                        // 恢复购买按钮
-                        if !isPackagePurchased {
-                        Button(action: {
-                            audioManager.playSound("click")
-                                restorePackage()
-                        }) {
-                            Text("恢复购买")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                        .disabled(giftManager.isLoading)
-                        }
-                    }
-                    .padding(.bottom, 30)
-                }
-                .frame(width: UIScreen.main.bounds.width * 0.9)
-                .padding(.horizontal)
-            } // 关闭ZStack
+                    .frame(width: 40, height: 40)
+            }
+            .position(x: UIScreen.main.bounds.width - 40, y: 100)
+            .zIndex(10)
             
             // 确认购买弹窗
             if showConfirmation {
@@ -156,6 +158,7 @@ struct GiftPackageView: View {
                 restoreFailedAlert
             }
         }
+        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         .onAppear {
             // 开始动画
             isAnimating = true

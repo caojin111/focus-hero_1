@@ -595,8 +595,10 @@ struct MainView: View {
         .sheet(isPresented: $showShop) {
             ShopView()
         }
-        .sheet(isPresented: $showGiftPackage) {
+        .fullScreenCover(isPresented: $showGiftPackage) {
             GiftPackageView()
+                .background(Color.clear)
+                .edgesIgnoringSafeArea(.all)
         }
         .fullScreenCover(isPresented: $showStartFocus) {
             StartFocusView(
