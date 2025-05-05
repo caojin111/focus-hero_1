@@ -94,6 +94,16 @@
         },
         "loop": true
       },
+      "cat": {
+        "frames": ["cat_1", "cat_2", "cat_3", "cat_4", "cat_5", "cat_6", "cat_7", "cat_8", "cat_9", "cat_10", "cat_11"],
+        "fps": 8,
+        "scale": 0.3,
+        "offset": {
+          "x": -50,
+          "y": -10
+        },
+        "loop": true
+      },
       "lightning": {
         "frames": ["lightning_1", "lightning_2", "lightning_3", "lightning_4", "lightning_5"],
         "fps": 12,
@@ -157,7 +167,7 @@
         "offset_y": -60,
         "spacing": 0
       },
-      "active_animations": ["hero.run", "hero.attack", "hammer.run", "hammer.attack", "boss.idle", "effect.wizard_attack", "effect.lightning"]
+      "active_animations": ["hero.run", "hero.attack", "hammer.run", "hammer.attack", "boss.idle", "effect.wizard_attack", "effect.lightning", "effect.cat"]
     },
     "relax": {
       "hero_position": {

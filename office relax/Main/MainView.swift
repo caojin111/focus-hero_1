@@ -16,12 +16,14 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
     var fps: Double
     var isLooping: Bool
     var playbackCompleted: (() -> Void)?
+    var animationKey: String? // 添加动画键以标识动画
     
-    init(images: [UIImage], fps: Double, isLooping: Bool = true, playbackCompleted: (() -> Void)? = nil) {
+    init(images: [UIImage], fps: Double, isLooping: Bool = true, playbackCompleted: (() -> Void)? = nil, animationKey: String? = nil) {
         self.images = images
         self.fps = fps
         self.isLooping = isLooping
         self.playbackCompleted = playbackCompleted
+        self.animationKey = animationKey
     }
     
     func makeUIView(context: Context) -> UIImageView {
@@ -31,6 +33,7 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
         imageView.layer.magnificationFilter = .linear // 提高清晰度
         imageView.layer.shouldRasterize = false // 避免模糊
         context.coordinator.imageView = imageView
+        context.coordinator.animationKey = animationKey // 传递动画键
         
         // 添加观察者来监听暂停和恢复通知
         NotificationCenter.default.addObserver(
@@ -51,6 +54,9 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIImageView, context: Context) {
+        // 更新animationKey
+        context.coordinator.animationKey = animationKey
+        
         // 停止任何现有动画
         uiView.stopAnimating()
         
@@ -73,6 +79,11 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
                 context.coordinator.setupAnimationCompletionTimer(duration: Double(images.count) / fps)
             }
             
+            // 为循环动画设置帧监控
+            if isLooping {
+                context.coordinator.setupFrameMonitor(fps: fps, frameCount: images.count)
+            }
+            
             // 开始动画
             uiView.startAnimating()
         } else {
@@ -81,7 +92,7 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(images: images)
+        Coordinator(images: images, animationKey: animationKey)
     }
     
     class Coordinator: NSObject {
@@ -92,9 +103,12 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
         var images: [UIImage]
         var timer: Timer?
         var completionTimer: Timer?
+        var frameMonitorTimer: Timer? // 用于监控帧变化
+        var animationKey: String? // 动画的唯一标识符
         
-        init(images: [UIImage]) {
+        init(images: [UIImage], animationKey: String? = nil) {
             self.images = images
+            self.animationKey = animationKey
             super.init()
         }
         
@@ -103,6 +117,69 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
                 print("动画播放完成，触发回调")
                 self?.playbackCompleted?()
             }
+        }
+        
+        // 为循环动画设置帧监控器
+        func setupFrameMonitor(fps: Double, frameCount: Int) {
+            // 清理之前的定时器
+            frameMonitorTimer?.invalidate()
+            frameMonitorTimer = nil
+            
+            guard frameCount > 0, let animationKey = animationKey else { return }
+            
+            // 计算每帧持续时间
+            let frameDuration = 1.0 / fps
+            
+            // 创建定时器监控帧变化
+            frameMonitorTimer = Timer.scheduledTimer(withTimeInterval: frameDuration, repeats: true) { [weak self] _ in
+                guard let self = self, let imageView = self.imageView, imageView.isAnimating, !self.isPaused else { return }
+                
+                // 计算当前帧索引
+                self.currentFrame = (self.currentFrame + 1) % frameCount
+                
+                // 获取当前帧的名称（如果可用）
+                if self.currentFrame < self.images.count {
+                    // 尝试从图像获取名称
+                    let frameIndex = self.currentFrame
+                    // 发送帧变化通知
+                    self.notifyFrameChange(frameIndex: frameIndex, animationKey: animationKey)
+                }
+            }
+            
+            if let timer = frameMonitorTimer {
+                RunLoop.main.add(timer, forMode: .common)
+            }
+        }
+        
+        // 通知帧变化
+        private func notifyFrameChange(frameIndex: Int, animationKey: String) {
+            // 获取帧名称
+            var frameName = "unknown"
+            
+            // 从动画键中提取类别和名称
+            let parts = animationKey.split(separator: ".")
+            if parts.count == 2 {
+                let category = String(parts[0])
+                let name = String(parts[1])
+                
+                // 根据类别和帧索引构造可能的帧名称
+                if category == "hero" && name == "attack" {
+                    frameName = "hero_attack_\(frameIndex + 1)"
+                } else if category == "hammer" && name == "attack" {
+                    frameName = "hammer_attack_\(frameIndex + 1)"
+                }
+            }
+            
+            // 发送通知
+            NotificationCenter.default.post(
+                name: NSNotification.Name("AnimationFrameChanged"),
+                object: nil,
+                userInfo: [
+                    "frameIndex": frameIndex,
+                    "frameName": frameName,
+                    "animationKey": animationKey
+                ]
+            )
         }
         
         // 为非循环动画设置完成计时器
@@ -132,6 +209,8 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             // 暂停定时器
             completionTimer?.invalidate()
             completionTimer = nil
+            frameMonitorTimer?.invalidate()
+            frameMonitorTimer = nil
             
             // 保存当前帧索引 - 通过随机选择帧停止
             currentFrame = Int.random(in: 0..<(images.count))
@@ -153,6 +232,12 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             // 重新启动动画
             imageView.startAnimating()
             
+            // 重新启动帧监控
+            if let animationKey = animationKey, images.count > 0 {
+                let fps = Double(images.count) / (imageView.animationDuration > 0 ? imageView.animationDuration : 1.0)
+                setupFrameMonitor(fps: fps, frameCount: images.count)
+            }
+            
             isPaused = false
         }
         
@@ -162,6 +247,8 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             timer = nil
             completionTimer?.invalidate()
             completionTimer = nil
+            frameMonitorTimer?.invalidate()
+            frameMonitorTimer = nil
         }
     }
     
@@ -178,6 +265,8 @@ extension NSNotification.Name {
 struct MainView: View {
     @StateObject private var userDataManager = UserDataManager.shared
     @StateObject private var audioManager = AudioManager.shared
+    // 初始化AttackSoundManager
+    private let attackSoundManager = AttackSoundManager.shared
     @State private var isWorkMode = true
     @State private var remainingSeconds: Int = 0
     @State private var isTimerRunning = false
@@ -199,6 +288,7 @@ struct MainView: View {
     @State private var showSettings = false
     @State private var showPauseDialog = false  // 控制暂停弹窗的显示
     @State private var showShop = false  // 控制商店弹窗的显示
+    @State private var showGiftPackage = false  // 控制礼包弹窗的显示
     @State private var showStartFocus = true  // 控制 StartFocus 视图的显示
     
     // 穿帮防护
@@ -273,9 +363,28 @@ struct MainView: View {
                                 .frame(width: 40, height: 40)
                                 .foregroundColor(.white)
                         }
+                        
                     }
                     .padding(.top, 50)  // 增加顶部间距，避开状态栏
                     .padding(.horizontal)
+                    
+                    // 顶部右侧的礼包按钮 - 只在休息模式下显示
+                    if !isWorkMode {
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                audioManager.playSound("click")
+                                showGiftPackage = true
+                            }) {
+                                Image("gift")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 40, height: 40)
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
                     
                     // 状态和奖励显示 - 移到上方
                     HStack(spacing: 20) {
@@ -386,6 +495,15 @@ struct MainView: View {
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onAppear {
+            // 验证礼包商品状态
+            ShopManager.shared.verifyAndFixGiftPackageItems()
+            
+            // 通知AttackSoundManager当前在MainView
+            notifyViewState(viewName: "MainView")
+            
+            // 初始化AttackSoundManager以监听攻击帧
+            _ = AttackSoundManager.shared
+            
             setTimerPosition(x: -3, y: 50)  // 设置倒计时区域向右偏移100点，向下偏移50点
             setTimerScale(2.5)  // 设置倒计时区域缩放为1.5倍
             
@@ -415,6 +533,18 @@ struct MainView: View {
                 }
             }
             
+            // 监听OpenGiftPackage通知
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("OpenGiftPackage"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                // 收到通知后打开礼包页面
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showGiftPackage = true
+                }
+            }
+            
             // 延迟加载内容，防止穿帮
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 // 预加载所有动画资源，但保持黑屏
@@ -424,6 +554,7 @@ struct MainView: View {
                     _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                     _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                     _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
                     
                     // 如果装备了effect_3，预加载hammer girl动画
                     if isEffect3Equipped() {
@@ -451,14 +582,21 @@ struct MainView: View {
             entryAnimationTimer?.invalidate()
             entryAnimationTimer = nil
             
-            // 移除通知观察者
-            NotificationCenter.default.removeObserver(self)
+            // 移除通知监听者
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("Effect3StatusChanged"), object: nil)
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("OpenGiftPackage"), object: nil)
+            
+            // 通知AttackSoundManager已离开MainView
+            notifyViewState(viewName: "OtherView")
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
         .sheet(isPresented: $showShop) {
             ShopView()
+        }
+        .sheet(isPresented: $showGiftPackage) {
+            GiftPackageView()
         }
         .fullScreenCover(isPresented: $showStartFocus) {
             StartFocusView(
@@ -478,6 +616,7 @@ struct MainView: View {
                         _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                         _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                         _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
                         
                         // 如果装备了effect_3，预加载hammer girl动画
                         if isEffect3Equipped() {
@@ -488,13 +627,17 @@ struct MainView: View {
                     
                     // 延迟一点时间后关闭StartFocusView，让主视图内容先准备好
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        // 确保音效播放功能被启用
+                        audioManager.isSoundPlaybackEnabled = true
+                        print("MainView: 确保音效播放功能已启用")
+                        
                         // Start Focus 完成后的回调
                         showStartFocus = false
                     
                         // 初始化并启动计时器
                         setupTimer()
                         
-                        // 启动背景音乐
+                        // 启动背景音乐 - focus_start完成后恢复音乐播放
                         if isWorkMode {
                             audioManager.playWorkMusic()
                         } else {
@@ -575,6 +718,8 @@ struct MainView: View {
             if newValue {
                 withAnimation(.easeOut(duration: 0.2)) {
                     isHeroEntryCompleted = false
+                    // 通知AttackSoundManager英雄入场动画未完成
+                    notifyHeroEntryState(completed: false)
                 }
                 entryAnimationTimer?.invalidate()
                 entryAnimationTimer = nil
@@ -586,19 +731,13 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
                 
                 // 如果装备了effect_3，预加载hammer girl动画
                 if isEffect3Equipped() {
                     _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
                     _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
                 }
-                
-                // 发送工作模式变更通知
-                NotificationCenter.default.post(
-                    name: NSNotification.Name("WorkModeChanged"),
-                    object: nil,
-                    userInfo: ["isWorkMode": true]
-                )
             } else {
                 // 切换到休息模式，停止所有商店音效，尤其是闪电音效
                 AudioManager.shared.stopAllShopSounds()
@@ -606,13 +745,6 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.relax")
                 _ = AnimationManager.shared.getAnimationInfo(for: "fireplace.burn")
                 _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
-                
-                // 发送工作模式变更通知
-                NotificationCenter.default.post(
-                    name: NSNotification.Name("WorkModeChanged"),
-                    object: nil,
-                    userInfo: ["isWorkMode": false]
-                )
             }
         }
     }
@@ -620,39 +752,75 @@ struct MainView: View {
     var background: some View {
         ZStack {
             if isWorkMode {
-                // 工作模式背景：使用bg2图片
-                if let _ = UIImage(named: "bg2") {
-                    // 如果bg2图片存在，则使用它
-                    Image("bg2")
-                        .resizable()
-                        .scaledToFill()
-                        .edgesIgnoringSafeArea(.all)
-                        .opacity(0.9)
+                // 工作模式背景：检查是否装备了bg_1，如果装备了则使用bg3.png，否则使用默认的bg2
+                if isBg1Equipped() {
+                    // 使用新的bg3背景图片
+                    if let _ = UIImage(named: "bg3") {
+                        Image("bg3")
+                            .resizable()
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .opacity(0.9)
+                    } else {
+                        // 如果bg3图片不存在，使用默认bg2
+                        Image("bg2")
+                            .resizable()
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .opacity(0.9)
+                    }
                 } else {
-                    // 如果bg2图片不存在，使用原来的深色背景作为备用
-                    Color(red: 0.1, green: 0.1, blue: 0.2)
-                        .edgesIgnoringSafeArea(.all)
+                    // 没有装备bg_1时使用默认的bg2图片
+                    if let _ = UIImage(named: "bg2") {
+                        Image("bg2")
+                            .resizable()
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .opacity(0.9)
+                    } else {
+                        // 如果bg2图片不存在，使用原来的深色背景作为备用
+                        Color(red: 0.1, green: 0.1, blue: 0.2)
+                            .edgesIgnoringSafeArea(.all)
+                    }
                 }
             } else {
-                // 休息模式背景：尝试加载bg1图片，如果失败则使用渐变色
-                if let _ = UIImage(named: "bg1") {
-                    // 如果bg1图片存在，则使用它
-                    Image("bg1")
-                        .resizable()
-                        .scaledToFill()
-                        .edgesIgnoringSafeArea(.all)
-                        .opacity(0.8)
+                // 休息模式背景：检查是否装备了bg_2，如果装备了则使用bg4.png，否则使用默认的bg1
+                if isBg2Equipped() {
+                    // 使用新的bg4背景图片
+                    if let _ = UIImage(named: "bg4") {
+                        Image("bg4")
+                            .resizable()
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .opacity(0.8)
+                    } else {
+                        // 如果bg4图片不存在，使用默认bg1
+                        Image("bg1")
+                            .resizable()
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .opacity(0.8)
+                    }
                 } else {
-                    // 如果bg1图片不存在，使用渐变色作为替代
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 0.2, green: 0.6, blue: 0.4),
-                            Color(red: 0.4, green: 0.7, blue: 0.5)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .edgesIgnoringSafeArea(.all)
+                    // 没有装备bg_2时使用默认的bg1图片
+                    if let _ = UIImage(named: "bg1") {
+                        Image("bg1")
+                            .resizable()
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .opacity(0.8)
+                    } else {
+                        // 如果bg1图片不存在，使用渐变色作为替代
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.2, green: 0.6, blue: 0.4),
+                                Color(red: 0.4, green: 0.7, blue: 0.5)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .edgesIgnoringSafeArea(.all)
+                    }
                 }
             }
         }
@@ -660,9 +828,11 @@ struct MainView: View {
     
     var heroView: some View {
         ZStack {
-            VStack(spacing: isWorkMode ? 
-                  (AnimationManager.shared.getSceneConfig(for: "work")?.name_label.spacing ?? 0) : 
-                  (AnimationManager.shared.getSceneConfig(for: "relax")?.name_label.spacing ?? 0)) {
+            let workSpacing = AnimationManager.shared.getSceneConfig(for: "work")?.name_label.spacing ?? 0
+            let relaxSpacing = AnimationManager.shared.getSceneConfig(for: "relax")?.name_label.spacing ?? 0
+            let spacing = isWorkMode ? workSpacing : relaxSpacing
+            
+            VStack(spacing: spacing) {
                 ZStack {
                     if isWorkMode {
                         ZStack {
@@ -691,16 +861,30 @@ struct MainView: View {
                                     }
                             }
                             
-                            // 特效动画 - 当装备了effect_1时显示法师攻击效果
+                            // 特效动画 - 当装备了effect_1或effect_6时显示法师或猫咪动画
                             // 把特效放在英雄动画之前，让英雄显示在特效上面
                             if isWorkMode && isHeroEntryCompleted {
-                                ConfigurableAnimatedView(animationKey: "effect.wizard_attack")
-                                    .opacity(isEffectEquipped() ? 1.0 : 0.0)
-                                    .animation(.easeInOut(duration: 0.3), value: isEffectEquipped())
-                                    .onAppear {
-                                        // 预加载wizard_attack动画
-                                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
-                                    }
+                                ZStack {
+                                    // wizard动画 - 当装备了effect_1时显示
+                                    let isWizardVisible = isEffect1Equipped()
+                                    ConfigurableAnimatedView(animationKey: "effect.wizard_attack")
+                                        .opacity(isWizardVisible ? 1.0 : 0.0)
+                                        .animation(.easeInOut(duration: 0.3), value: isWizardVisible)
+                                        .onAppear {
+                                            // 预加载wizard_attack动画
+                                            _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                                        }
+                                    
+                                    // cat动画 - 当装备了effect_6时显示
+                                    let isCatVisible = isEffect6Equipped()
+                                    ConfigurableAnimatedView(animationKey: "effect.cat")
+                                        .opacity(isCatVisible ? 1.0 : 0.0)
+                                        .animation(.easeInOut(duration: 0.3), value: isCatVisible)
+                                        .onAppear {
+                                            // 预加载cat动画
+                                            _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
+                                        }
+                                }
                             }
                             
                             // 入场动画 - 当装备effect_3时显示hammer girl，否则显示普通hero
@@ -712,6 +896,8 @@ struct MainView: View {
                                         withAnimation(.easeIn(duration: 0.2)) {
                                             print("入场动画完成，切换到攻击动画")
                                             isHeroEntryCompleted = true
+                                            // 通知AttackSoundManager英雄入场动画已完成
+                                            notifyHeroEntryState(completed: true)
                                             entryAnimationTimer?.invalidate()
                                             entryAnimationTimer = nil
                                         }
@@ -726,6 +912,8 @@ struct MainView: View {
                                         withAnimation(.easeIn(duration: 0.2)) {
                                             print("Hammer girl入场动画完成，切换到攻击动画")
                                             isHeroEntryCompleted = true
+                                            // 通知AttackSoundManager英雄入场动画已完成
+                                            notifyHeroEntryState(completed: true)
                                             entryAnimationTimer?.invalidate()
                                             entryAnimationTimer = nil
                                         }
@@ -781,6 +969,10 @@ struct MainView: View {
                 }
                 
                 // 英雄名字 - 可配置位置
+                let workOffsetY = AnimationManager.shared.getSceneConfig(for: "work")?.name_label.offset_y ?? 0
+                let relaxOffsetY = AnimationManager.shared.getSceneConfig(for: "relax")?.name_label.offset_y ?? 0
+                let nameOffsetY = isWorkMode ? workOffsetY : relaxOffsetY
+                
                 Text(userDataManager.userProfile.catName)
                     .font(.subheadline)
                     .foregroundColor(.white)
@@ -788,24 +980,17 @@ struct MainView: View {
                     .padding(.vertical, 2)
                     .background(Color.black.opacity(0.5))
                     .cornerRadius(6)
-                    .offset(y: isWorkMode ? 
-                          (AnimationManager.shared.getSceneConfig(for: "work")?.name_label.offset_y ?? 0) : 
-                          (AnimationManager.shared.getSceneConfig(for: "relax")?.name_label.offset_y ?? 0))
+                    .offset(y: nameOffsetY)
             }
         }
         .padding(.horizontal)
-        .offset(
-            x: isWorkMode ? 
-                (AnimationManager.shared.getSceneConfig(for: "work")?.hero_position.x ?? -90) : 
-                (AnimationManager.shared.getSceneConfig(for: "relax")?.hero_position.x ?? -90),
-            y: isWorkMode ? 
-                (AnimationManager.shared.getSceneConfig(for: "work")?.hero_position.y ?? 50) : 
-                (AnimationManager.shared.getSceneConfig(for: "relax")?.hero_position.y ?? 50)
-        )
+        .offset(x: getHeroPositionX(), y: getHeroPositionY())
         .onChange(of: isWorkMode) { newValue in
             if newValue {
                 withAnimation(.easeOut(duration: 0.2)) {
                     isHeroEntryCompleted = false
+                    // 通知AttackSoundManager英雄入场动画未完成
+                    notifyHeroEntryState(completed: false)
                 }
                 entryAnimationTimer?.invalidate()
                 entryAnimationTimer = nil
@@ -817,6 +1002,7 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
                 
                 // 如果装备了effect_3，预加载hammer girl动画
                 if isEffect3Equipped() {
@@ -858,6 +1044,8 @@ struct MainView: View {
                     // 使用动画使切换更平滑
                     withAnimation(.easeIn(duration: 0.15)) {  // 减少过渡动画时间
                         isHeroEntryCompleted = true
+                        // 通知AttackSoundManager英雄入场动画已完成
+                        notifyHeroEntryState(completed: true)
                         print("入场动画备用定时器触发，切换到攻击动画")
                     }
                 }
@@ -868,12 +1056,6 @@ struct MainView: View {
         if let timer = entryAnimationTimer {
             RunLoop.main.add(timer, forMode: .common)
         }
-    }
-    
-    // 检查是否装备了effect_1特效
-    private func isEffectEquipped() -> Bool {
-        return ShopManager.shared.getEquippedItems(ofType: .effect)
-            .contains(where: { $0.id == "effect_1" })
     }
     
     // 检查是否装备了effect_2特效
@@ -898,6 +1080,30 @@ struct MainView: View {
     private func isEffect3Equipped() -> Bool {
         return ShopManager.shared.getEquippedItems(ofType: .effect)
             .contains(where: { $0.id == "effect_3" })
+    }
+    
+    // 检查是否装备了effect_6特效
+    private func isEffect6Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_6" })
+    }
+    
+    // 检查是否装备了effect_1特效
+    private func isEffect1Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .effect)
+            .contains(where: { $0.id == "effect_1" })
+    }
+    
+    // 检查是否装备了bg_1背景
+    private func isBg1Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .background)
+            .contains(where: { $0.id == "bg_1" })
+    }
+    
+    // 检查是否装备了bg_2背景
+    private func isBg2Equipped() -> Bool {
+        return ShopManager.shared.getEquippedItems(ofType: .background)
+            .contains(where: { $0.id == "bg_2" })
     }
     
     var bottomButtons: some View {
@@ -1106,6 +1312,7 @@ struct MainView: View {
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
                 
                 // 如果装备了effect_3，预加载hammer girl动画
                 if isEffect3Equipped() {
@@ -1320,6 +1527,38 @@ struct MainView: View {
         timerOffsetX = 0
         timerOffsetY = 0
         timerScale = 1
+    }
+    
+    // 计算英雄位置X坐标
+    private func getHeroPositionX() -> CGFloat {
+        return isWorkMode ? 
+            (AnimationManager.shared.getSceneConfig(for: "work")?.hero_position.x ?? -90) : 
+            (AnimationManager.shared.getSceneConfig(for: "relax")?.hero_position.x ?? -90)
+    }
+    
+    // 计算英雄位置Y坐标
+    private func getHeroPositionY() -> CGFloat {
+        return isWorkMode ? 
+            (AnimationManager.shared.getSceneConfig(for: "work")?.hero_position.y ?? 50) : 
+            (AnimationManager.shared.getSceneConfig(for: "relax")?.hero_position.y ?? 50)
+    }
+    
+    // 通知视图状态变化
+    private func notifyViewState(viewName: String) {
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ViewStateChanged"),
+            object: nil,
+            userInfo: ["viewName": viewName]
+        )
+    }
+    
+    // 通知英雄入场动画状态
+    private func notifyHeroEntryState(completed: Bool) {
+        NotificationCenter.default.post(
+            name: NSNotification.Name("HeroEntryAnimationCompleted"),
+            object: nil,
+            userInfo: ["completed": completed]
+        )
     }
 }
 

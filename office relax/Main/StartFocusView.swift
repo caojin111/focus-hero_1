@@ -9,6 +9,7 @@ import SwiftUI
 
 struct StartFocusView: View {
     @ObservedObject private var userDataManager = UserDataManager.shared
+    @ObservedObject private var audioManager = AudioManager.shared
     @Environment(\.presentationMode) var presentationMode
     @State private var showMainView = false
     @State private var animationCompleted = false
@@ -101,8 +102,20 @@ struct StartFocusView: View {
             .opacity(closeOpacity)
         }
         .onAppear {
+            // 停止所有音频（音乐和音效）
+            audioManager.stopAllAudio()
+            
+            // 禁用所有音效播放
+            audioManager.isSoundPlaybackEnabled = false
+            print("focus_start页面：已禁用所有音效播放")
+            
             // 开始动画序列
             startAnimations()
+        }
+        .onDisappear {
+            // 恢复音效播放功能
+            audioManager.isSoundPlaybackEnabled = true
+            print("focus_start页面：已恢复音效播放功能")
         }
         .onTapGesture {
             if animationCompleted && !startClosing {
@@ -158,6 +171,10 @@ struct StartFocusView: View {
         
         // 动画完成后回调
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            // 恢复音效播放功能 (在回调前恢复，确保退出视图后音效可正常播放)
+            audioManager.isSoundPlaybackEnabled = true
+            print("focus_start页面退出：已恢复音效播放功能")
+            
             onComplete()
         }
     }

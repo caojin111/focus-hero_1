@@ -7,6 +7,9 @@
 
 import SwiftUI
 import Network
+import StoreKit
+import FirebaseCore
+import FirebaseCrashlytics
 
 // 添加Info.plist描述
 /*
@@ -21,6 +24,29 @@ import Network
 // 应用委托用于初始化和配置
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        // 诊断 GoogleService-Info.plist 文件
+        let googleServiceInfoAvailable = GoogleServiceInfoLoader.shared.ensureGoogleServiceInfoAvailable()
+        print("GoogleService-Info.plist 可用性: \(googleServiceInfoAvailable)")
+        
+        // 使用绕过方案配置 Firebase
+        FirebaseLoaderWorkaround.shared.configureFirebase()
+        
+        // 尝试确认 Firebase 是否已成功配置
+        if let app = FirebaseApp.app() {
+            print("Firebase 确认已配置成功: \(app.name)")
+        } else {
+            print("⚠️ 警告: Firebase 似乎未成功配置")
+        }
+        
+        // 配置 Crashlytics
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+        
+        // 记录一个测试事件到 Crashlytics
+        Crashlytics.crashlytics().log("应用启动")
+        
+        // 添加测试用户信息
+        Crashlytics.crashlytics().setCustomValue("测试模式", forKey: "应用状态")
+        
         // 注册自定义字体
         FontManager.registerFonts()
         
@@ -54,6 +80,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // 在应用启动时立即初始化网络管理器
         _ = NetworkManager.shared
+        
+        // 加载App内购商品信息
+        _ = GiftPackageManager.shared
         
         return true
     }

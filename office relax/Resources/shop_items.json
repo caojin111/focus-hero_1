@@ -19,9 +19,10 @@
         "id": "effect_3",
         "name": "Hammer girl",
         "description": "Change your hero into a hammer girl!",
-        "price": 0,
+        "price": 100000,
+        "priceString": "starter pack",
         "imageName": "effect_hammer",
-        "type": "effect"
+        "type": "premium"
     },
     {
         "id": "effect_4",
@@ -40,6 +41,15 @@
         "type": "effect"
     },
     {
+        "id": "effect_6",
+        "name": "A boring cat",
+        "description": "She thinks your battle is so boring >.<",
+        "price": 100000,
+        "priceString": "starter pack",
+        "imageName": "cat",
+        "type": "premium"
+    },
+    {
         "id": "sound_1",
         "name": "lightning sound",
         "description": "let your lightning magic sounds to be heard",
@@ -49,10 +59,10 @@
     },
     {
         "id": "sound_2",
-        "name": "打击音效",
-        "description": "有力的打击声效。",
-        "price": 80,
-        "imageName": "sound_hit",
+        "name": "slashing sound",
+        "description": "let your slashing sound to be heard",
+        "price": 0,
+        "imageName": "slash",
         "type": "sound"
     },
     {
@@ -73,42 +83,18 @@
     },
     {
         "id": "bg_1",
-        "name": "城市夜景",
-        "description": "现代都市的夜晚背景。",
-        "price": 300,
-        "imageName": "bg_city_night",
+        "name": "the last of us",
+        "description": "the last of us",
+        "price": 0,
+        "imageName": "bg_work_2",
         "type": "background"
     },
     {
         "id": "bg_2",
-        "name": "森林清晨",
-        "description": "宁静的森林清晨背景。",
-        "price": 300,
-        "imageName": "bg_forest",
+        "name": "secret cave",
+        "description": "there is a huge cave",
+        "price": 0,
+        "imageName": "bg_relax_2",
         "type": "background"
-    },
-    {
-        "id": "bubble_1",
-        "name": "可爱气泡",
-        "description": "萌萌哒的可爱气泡效果。",
-        "price": 120,
-        "imageName": "bubble_cute",
-        "type": "bubble"
-    },
-    {
-        "id": "bubble_2",
-        "name": "炫彩气泡",
-        "description": "五彩缤纷的炫彩气泡效果。",
-        "price": 150,
-        "imageName": "bubble_colorful",
-        "type": "bubble"
-    },
-    {
-        "id": "premium_1",
-        "name": "豪华礼包",
-        "description": "包含所有特效和音效的豪华礼包。",
-        "price": 1000,
-        "imageName": "premium_pack",
-        "type": "premium"
     }
 ] 

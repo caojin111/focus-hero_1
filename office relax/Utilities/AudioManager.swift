@@ -20,7 +20,10 @@ class AudioManager: ObservableObject {
     // 跟踪每个音效最后播放时间
     private var lastSoundPlayTimes: [String: Date] = [:]
     // 音效播放的最小间隔时间(秒)
-    private let soundCooldown: TimeInterval = 3.0
+    private let soundCooldown: TimeInterval = 2.0
+    
+    // 全局控制是否允许播放音效
+    @Published var isSoundPlaybackEnabled: Bool = true
     
     // 音量设置 (0.0 - 1.0)
     @Published var musicVolume: Float = 0.5 {
@@ -112,14 +115,14 @@ class AudioManager: ObservableObject {
                 switch mode {
                 case .work:
                     workModePlayer = try AVAudioPlayer(contentsOf: musicURL)
-                    workModePlayer?.numberOfLoops = -1 // 无限循环
-                    workModePlayer?.volume = musicVolume
-                    workModePlayer?.prepareToPlay()
+                workModePlayer?.numberOfLoops = -1 // 无限循环
+                workModePlayer?.volume = musicVolume
+                workModePlayer?.prepareToPlay()
                 case .relax:
                     relaxModePlayer = try AVAudioPlayer(contentsOf: musicURL)
-                    relaxModePlayer?.numberOfLoops = -1 // 无限循环
-                    relaxModePlayer?.volume = musicVolume
-                    relaxModePlayer?.prepareToPlay()
+                relaxModePlayer?.numberOfLoops = -1 // 无限循环
+                relaxModePlayer?.volume = musicVolume
+                relaxModePlayer?.prepareToPlay()
                 }
                 print("成功准备\(mode == .work ? "工作" : "休息")模式音乐: \(fileName)")
             } catch {
@@ -193,6 +196,27 @@ class AudioManager: ObservableObject {
         for (_, player) in soundPlayers {
             player.pause()
         }
+    }
+    
+    // 停止所有音频 - 包括音乐和音效
+    func stopAllAudio() {
+        // 停止所有背景音乐
+        stopAllMusic()
+        
+        // 停止所有商店音效
+        stopAllShopSounds()
+        
+        // 停止所有其他音效
+        for (name, player) in soundPlayers {
+            player.stop()
+            soundPlayers.removeValue(forKey: name)
+            print("停止音效: \(name)")
+        }
+        
+        // 清空音效播放器字典
+        soundPlayers.removeAll()
+        
+        print("已停止所有音频播放")
     }
     
     // 恢复工作模式音乐
@@ -296,6 +320,12 @@ class AudioManager: ObservableObject {
     
     // 播放音效 - 受到系统设置控制
     func playSound(_ name: String) {
+        // 首先检查是否启用了音效播放功能
+        guard isSoundPlaybackEnabled else {
+            print("全局音效播放已禁用，不播放: \(name)")
+            return
+        }
+        
         // 首先检查是否启用了音效
         // 所有商店音效(shop_开头)或特殊标记的音效都受音效开关控制
         if isShopSound(name) && !soundEnabled {
@@ -303,14 +333,20 @@ class AudioManager: ObservableObject {
             return
         }
         
-        // 检查音效冷却时间，任何音效3秒内只能播放一次
-        if !canPlaySound(name) {
+        // 特殊处理：shop_attack是sound_2的音效，使用attack.mp3
+        let soundFileName = name == "shop_attack" ? "attack" : name
+        
+        // 检查音效冷却时间，普通音效3秒内只能播放一次
+        // shop_attack不受冷却时间限制
+        if name != "shop_attack" && !canPlaySound(name) {
             print("音效 \(name) 在冷却中，跳过播放")
             return
         }
         
-        // 记录音效播放时间
-        lastSoundPlayTimes[name] = Date()
+        // 记录音效播放时间（不记录shop_attack的播放时间，因为它不受冷却限制）
+        if name != "shop_attack" {
+            lastSoundPlayTimes[name] = Date()
+        }
         
         // 如果已经有播放器在播放这个音效，先停止它
         if let existingPlayer = soundPlayers[name] {
@@ -319,17 +355,30 @@ class AudioManager: ObservableObject {
         }
         
         // 加载音效文件
-        guard let soundURL = Bundle.main.url(forResource: name, withExtension: "mp3") else {
-            print("未找到音效文件: \(name)")
+        guard let soundURL = Bundle.main.url(forResource: soundFileName, withExtension: "mp3") else {
+            print("未找到音效文件: \(soundFileName)")
             return
         }
         
         do {
             let player = try AVAudioPlayer(contentsOf: soundURL)
             
-            // 设置音效音量
-            // 商店音效使用系统音效音量设置，其他音效使用默认音量
-            if isShopSound(name) {
+            // 设置音效音量和播放速率
+            // sound_1(shop_thunder)和sound_2(shop_attack)音效音量固定设置为0.5
+            if name == "shop_thunder" || name == "shop_attack" {
+                player.volume = 0.5
+                
+                // 为shop_attack(攻击音效)调整播放速率，使其更好地匹配hammer girl的攻击动画
+                if name == "shop_attack" {
+                    // 降低播放速率以匹配动画
+                    player.rate = 0.85
+                    print("播放音效: \(name)，使用固定0.5音量，降低播放速率为0.85")
+                } else {
+                    print("播放音效: \(name)，使用固定0.5音量")
+                }
+            }
+            // 其他商店音效使用系统音效音量设置，其他音效使用默认音量
+            else if isShopSound(name) {
                 player.volume = Float(soundVolume)
                 print("播放商店音效: \(name)，音量: \(soundVolume)")
             } else {

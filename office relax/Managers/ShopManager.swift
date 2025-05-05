@@ -10,7 +10,7 @@ class ShopManager: ObservableObject {
     @Published var equippedEffects: [ShopItem] = []
     @Published var equippedSounds: [ShopItem] = []
     @Published var equippedBGMs: [ShopItem] = []
-    @Published var equippedBackground: ShopItem?
+    @Published var equippedBackgrounds: [ShopItem] = []
     
     private init() {
         loadItems()
@@ -22,7 +22,10 @@ class ShopManager: ObservableObject {
         let currentEquippedEffects = equippedEffects
         let currentEquippedSounds = equippedSounds
         let currentEquippedBGMs = equippedBGMs
-        let currentEquippedBackground = equippedBackground
+        let currentEquippedBackgrounds = equippedBackgrounds
+        
+        // 保存已购买的商品
+        let currentPurchasedItems = purchasedItems
         
         // 清空现有商品数据但保留已购买数据
         shopItems.removeAll()
@@ -30,11 +33,23 @@ class ShopManager: ObservableObject {
         // 重新加载商品数据
         loadItems()
         
+        // 确保购买状态与刷新前一致
+        for purchasedItem in currentPurchasedItems {
+            if let index = shopItems.firstIndex(where: { $0.id == purchasedItem.id }) {
+                shopItems[index].isPurchased = true
+            }
+            
+            // 确保purchasedItems中包含所有已购买的商品
+            if !purchasedItems.contains(where: { $0.id == purchasedItem.id }) {
+                purchasedItems.append(purchasedItem)
+            }
+        }
+        
         // 确保装备状态与刷新前一致
         equippedEffects = currentEquippedEffects
         equippedSounds = currentEquippedSounds
         equippedBGMs = currentEquippedBGMs
-        equippedBackground = currentEquippedBackground
+        equippedBackgrounds = currentEquippedBackgrounds
         
         // 同步装备状态到purchasedItems
         for effectItem in equippedEffects {
@@ -80,21 +95,18 @@ class ShopManager: ObservableObject {
             equippedEffects = items.filter { $0.type == .effect && ($0.isEquipped ?? false) }
             equippedSounds = items.filter { $0.type == .sound && ($0.isEquipped ?? false) }
             equippedBGMs = items.filter { $0.type == .bgm && ($0.isEquipped ?? false) }
-            equippedBackground = items.first { $0.type == .background && ($0.isEquipped ?? false) }
+            equippedBackgrounds = items.filter { $0.type == .background && ($0.isEquipped ?? false) }
         }
     }
     
-    private func savePurchasedItems() {
+    func savePurchasedItems() {
         if let encoded = try? JSONEncoder().encode(purchasedItems) {
             UserDefaults.standard.set(encoded, forKey: "purchasedItems")
         }
     }
     
     func saveEquippedItems() {
-        var allEquippedItems = equippedEffects + equippedSounds + equippedBGMs
-        if let background = equippedBackground {
-            allEquippedItems.append(background)
-        }
+        var allEquippedItems = equippedEffects + equippedSounds + equippedBGMs + equippedBackgrounds
         
         if let encoded = try? JSONEncoder().encode(allEquippedItems) {
             UserDefaults.standard.set(encoded, forKey: "equippedItems")
@@ -156,62 +168,20 @@ class ShopManager: ObservableObject {
         switch item.type {
         case .effect:
             if !equippedEffects.contains(where: { $0.id == itemId }) {
+                // 添加互斥逻辑：如果装备effect_1，先卸载effect_6
+                if itemId == "effect_1" && equippedEffects.contains(where: { $0.id == "effect_6" }) {
+                    unequipItem(itemId: "effect_6")
+                }
+                // 添加互斥逻辑：如果装备effect_6，先卸载effect_1
+                else if itemId == "effect_6" && equippedEffects.contains(where: { $0.id == "effect_1" }) {
+                    unequipItem(itemId: "effect_1")
+                }
+                
                 if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
                     purchasedItems[index].isEquipped = true
                     equippedEffects.append(purchasedItems[index])
                     
-                    // 如果是effect_1，重新加载动画配置并预加载动画
-                    if itemId == "effect_1" {
-                        AnimationManager.shared.reloadConfigurationAndRefresh()
-                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
-                    }
-                    // 如果是effect_2，重新加载动画配置并预加载动画
-                    else if itemId == "effect_2" {
-                        AnimationManager.shared.reloadConfigurationAndRefresh()
-                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
-                        
-                        // 特殊处理：当装备闪电特效时，自动装备闪电音效（如果已购买）
-                        if let soundItem = purchasedItems.first(where: { $0.id == "sound_1" }) {
-                            if !equippedSounds.contains(where: { $0.id == "sound_1" }) {
-                                if let soundIndex = purchasedItems.firstIndex(where: { $0.id == "sound_1" }) {
-                                    purchasedItems[soundIndex].isEquipped = true
-                                    equippedSounds.append(purchasedItems[soundIndex])
-                                    
-                                    // 同步装备状态到shopItems
-                                    if let shopSoundIndex = shopItems.firstIndex(where: { $0.id == "sound_1" }) {
-                                        shopItems[shopSoundIndex].isEquipped = true
-                                    }
-                                    
-                                    print("已自动装备闪电音效，与闪电特效一同使用")
-                                }
-                            }
-                        }
-                    }
-                    // 如果是effect_5，预加载旅人动画
-                    else if itemId == "effect_5" {
-                        AnimationManager.shared.reloadConfigurationAndRefresh()
-                        _ = AnimationManager.shared.getAnimationInfo(for: "traveller.sit")
-                        print("装备旅人特效，预加载旅人动画")
-                    }
-                    // 如果是effect_3，刷新工作模式动画状态
-                    else if itemId == "effect_3" {
-                        AnimationManager.shared.reloadConfigurationAndRefresh()
-                        
-                        // 预加载hammer girl动画
-                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
-                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
-                        
-                        print("装备effect_3特效，切换为Hammer girl动画")
-                        
-                        // 发送通知以刷新UI状态
-                        NotificationCenter.default.post(
-                            name: NSNotification.Name("Effect3StatusChanged"),
-                            object: nil,
-                            userInfo: ["isEquipped": true]
-                        )
-                    }
-                    
-                    // 同步装备状态到shopItems
+                    // 同步状态到shopItems
                     if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
                         shopItems[shopIndex].isEquipped = true
                     }
@@ -223,15 +193,10 @@ class ShopManager: ObservableObject {
                     purchasedItems[index].isEquipped = true
                     equippedSounds.append(purchasedItems[index])
                     
-                    // 特殊处理：当装备闪电音效时，提醒用户可能需要装备闪电特效
-                    if itemId == "sound_1" {
-                        print("闪电音效已装备，需要搭配闪电特效使用才能听到")
+                    // 同步状态到shopItems
+                    if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
+                        shopItems[shopIndex].isEquipped = true
                     }
-                }
-                
-                // 同步装备状态到shopItems
-                if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
-                    shopItems[shopIndex].isEquipped = true
                 }
             }
         case .bgm:
@@ -251,40 +216,55 @@ class ShopManager: ObservableObject {
                 }
             }
         case .background:
-            // 取消当前装备的背景
-            if let currentBackground = equippedBackground,
-               let index = purchasedItems.firstIndex(where: { $0.id == currentBackground.id }) {
-                purchasedItems[index].isEquipped = false
-                
-                // 同步状态到shopItems
-                if let shopIndex = shopItems.firstIndex(where: { $0.id == currentBackground.id }) {
-                    shopItems[shopIndex].isEquipped = false
-                }
-            }
-            
-            // 装备新的背景
-            if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
-                purchasedItems[index].isEquipped = true
-                equippedBackground = purchasedItems[index]
-                
-                // 同步状态到shopItems
-                if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
-                    shopItems[shopIndex].isEquipped = true
-                }
-            }
-        case .bubble:
-            // 气泡类型的装备逻辑
-            if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
-                purchasedItems[index].isEquipped = true
-                
-                // 同步状态到shopItems
-                if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
-                    shopItems[shopIndex].isEquipped = true
+            // 如果背景已经装备，则不重复装备
+            if !equippedBackgrounds.contains(where: { $0.id == itemId }) {
+                if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
+                    purchasedItems[index].isEquipped = true
+                    equippedBackgrounds.append(purchasedItems[index])
+                    
+                    // 同步状态到shopItems
+                    if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
+                        shopItems[shopIndex].isEquipped = true
+                    }
                 }
             }
         case .premium:
-            // 处理付费道具的装备逻辑
-            break
+            // 处理特殊的premium道具装备逻辑
+            if itemId == "effect_3" || itemId == "effect_6" {
+                // 因为这些是特效类型的premium物品，将它们添加到equippedEffects中
+                if !equippedEffects.contains(where: { $0.id == itemId }) {
+                    // 添加互斥逻辑：如果装备effect_6，先卸载effect_1
+                    if itemId == "effect_6" && equippedEffects.contains(where: { $0.id == "effect_1" }) {
+                        unequipItem(itemId: "effect_1")
+                    }
+                    
+                    if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
+                        purchasedItems[index].isEquipped = true
+                        equippedEffects.append(purchasedItems[index])
+                        
+                        // 同步状态到shopItems
+                        if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
+                            shopItems[shopIndex].isEquipped = true
+                        }
+                        
+                        // 对effect_3特效的特殊处理
+                        if itemId == "effect_3" {
+                            // 发送通知以刷新UI状态
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("Effect3StatusChanged"),
+                                object: nil,
+                                userInfo: ["isEquipped": true]
+                            )
+                            
+                            // 预加载hammer girl动画
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                            
+                            print("装备effect_3特效，启用hammer girl动画")
+                        }
+                    }
+                }
+            }
         }
         
         saveEquippedItems()
@@ -304,6 +284,10 @@ class ShopManager: ObservableObject {
                 
                 // 如果是effect_1，重新加载动画配置
                 if itemId == "effect_1" {
+                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                }
+                // 如果是effect_6，重新加载动画配置
+                else if itemId == "effect_6" {
                     AnimationManager.shared.reloadConfigurationAndRefresh()
                 }
                 // 如果是effect_2，重新加载动画配置
@@ -360,6 +344,15 @@ class ShopManager: ObservableObject {
                     AudioManager.shared.stopSound("shop_thunder")
                     print("卸载sound_1，停止闪电音效播放")
                 }
+                // 如果是sound_2，发送装备状态变更通知
+                else if itemId == "sound_2" {
+                    print("卸载sound_2，不再播放攻击音效")
+                    // 发送通知以刷新攻击音效状态
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("EquipmentStatusChanged"),
+                        object: nil
+                    )
+                }
             }
         case .bgm:
             if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
@@ -375,20 +368,9 @@ class ShopManager: ObservableObject {
                 AudioManager.shared.refreshBGMPlayers()
             }
         case .background:
-            if let currentBackground = equippedBackground {
-                if let index = purchasedItems.firstIndex(where: { $0.id == currentBackground.id }) {
-                    purchasedItems[index].isEquipped = false
-                    
-                    // 同步状态到shopItems
-                    if let shopIndex = shopItems.firstIndex(where: { $0.id == currentBackground.id }) {
-                        shopItems[shopIndex].isEquipped = false
-                    }
-                }
-            }
-            equippedBackground = nil
-        case .bubble:
             if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
                 purchasedItems[index].isEquipped = false
+                equippedBackgrounds.removeAll(where: { $0.id == itemId })
                 
                 // 同步状态到shopItems
                 if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
@@ -396,7 +378,42 @@ class ShopManager: ObservableObject {
                 }
             }
         case .premium:
-            break
+            // 处理特殊的premium道具卸载逻辑
+            if itemId == "effect_3" || itemId == "effect_6" {
+                // 因为这些是特效类型的premium物品，从equippedEffects中移除它们
+                if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
+                    purchasedItems[index].isEquipped = false
+                    equippedEffects.removeAll(where: { $0.id == itemId })
+                    
+                    // 同步状态到shopItems
+                    if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
+                        shopItems[shopIndex].isEquipped = false
+                    }
+                    
+                    // 对effect_3特效的特殊处理
+                    if itemId == "effect_3" {
+                        AnimationManager.shared.reloadConfigurationAndRefresh()
+                        
+                        // 预加载原始英雄动画
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                        
+                        print("已卸载effect_3特效，恢复原始英雄动画")
+                        
+                        // 发送通知以刷新UI状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("Effect3StatusChanged"),
+                            object: nil,
+                            userInfo: ["isEquipped": false]
+                        )
+                    }
+                    // 对effect_6特效的特殊处理
+                    else if itemId == "effect_6" {
+                        AnimationManager.shared.reloadConfigurationAndRefresh()
+                        print("已卸载effect_6特效")
+                    }
+                }
+            }
         }
         
         // 保存装备状态
@@ -421,7 +438,7 @@ class ShopManager: ObservableObject {
             return true
         }
         
-        if let background = equippedBackground, background.id == itemId {
+        if equippedBackgrounds.contains(where: { $0.id == itemId }) {
             return true
         }
         
@@ -443,11 +460,62 @@ class ShopManager: ObservableObject {
         case .bgm:
             return equippedBGMs
         case .background:
-            return equippedBackground.map { [$0] } ?? []
-        case .bubble:
-            return []
+            return equippedBackgrounds
         case .premium:
             return []
+        }
+    }
+    
+    // 验证并修复礼包物品的购买状态
+    func verifyAndFixGiftPackageItems() {
+        // 获取礼包中包含的物品ID
+        let giftPackageItems = GiftPackageManager.shared.starterPackage.includedItems
+        
+        // 检查礼包状态
+        let hasAnyGiftItem = purchasedItems.contains { item in
+            giftPackageItems.contains(item.id)
+        }
+        
+        // 如果有任何一个礼包物品，确保所有礼包物品都解锁
+        if hasAnyGiftItem {
+            var needsSave = false
+            
+            for itemId in giftPackageItems {
+                // 检查商店中是否存在该物品
+                if let item = shopItems.first(where: { $0.id == itemId }) {
+                    // 检查该物品是否已经设置为购买状态
+                    let shopIndex = shopItems.firstIndex(where: { $0.id == itemId })
+                    if shopIndex != nil && shopItems[shopIndex!].isPurchased != true {
+                        shopItems[shopIndex!].isPurchased = true
+                        needsSave = true
+                        print("已修复商店物品购买状态: \(itemId)")
+                    }
+                    
+                    // 检查该物品是否存在于已购买列表中
+                    if !purchasedItems.contains(where: { $0.id == itemId }) {
+                        var purchasedItem = item
+                        purchasedItem.isPurchased = true
+                        purchasedItems.append(purchasedItem)
+                        needsSave = true
+                        print("已添加礼包物品到购买列表: \(itemId)")
+                    } else {
+                        // 如果存在于已购买列表但状态不对，更新状态
+                        let purchasedIndex = purchasedItems.firstIndex(where: { $0.id == itemId })
+                        if purchasedIndex != nil && purchasedItems[purchasedIndex!].isPurchased != true {
+                            purchasedItems[purchasedIndex!].isPurchased = true
+                            needsSave = true
+                            print("已修复已购物品状态: \(itemId)")
+                        }
+                    }
+                }
+            }
+            
+            // 如果有任何修改，保存并通知UI更新
+            if needsSave {
+                savePurchasedItems()
+                objectWillChange.send()
+                print("已修复礼包物品的购买状态")
+            }
         }
     }
 } 

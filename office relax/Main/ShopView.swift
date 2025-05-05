@@ -249,6 +249,7 @@ struct ShopView: View {
         }
         .onAppear {
             shopManager.refreshItems()
+            shopManager.verifyAndFixGiftPackageItems()
         }
         .onDisappear {
             // 确保离开商店时保存装备状态
@@ -258,6 +259,16 @@ struct ShopView: View {
     
     private func handleItemTap(_ item: ShopItem) {
         selectedItem = item
+        
+        // 检查是否为starter pack物品（effect_3或effect_6）且未购买
+        if (item.id == "effect_3" || item.id == "effect_6") && !(item.isPurchased ?? false) {
+            // 设置一个通知，通知MainView打开礼包页面
+            NotificationCenter.default.post(name: NSNotification.Name("OpenGiftPackage"), object: nil)
+            // 关闭商店页面
+            presentationMode.wrappedValue.dismiss()
+            return
+        }
+        
         if item.isPurchased ?? false {
             if shopManager.isItemEquipped(itemId: item.id) {
                 showUnequipDialog = true
@@ -302,8 +313,6 @@ struct ShopView: View {
             return "背景"
         case .premium:
             return "付费"
-        case .bubble:
-            return "气泡"
         }
     }
 }
@@ -382,14 +391,22 @@ struct ShopItemCard: View {
                                 .cornerRadius(4)
                         } else {
                             // 价格和购买按钮
-                            HStack(spacing: 4) {
-                                Image("coin")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 16, height: 16)
-                                Text("\(item.price)")
+                            if let priceString = item.priceString {
+                                // 显示自定义价格文本
+                                Text(priceString)
                                     .font(.system(size: 12, weight: .bold))
                                     .foregroundColor(.white)
+                            } else {
+                                // 显示金币价格
+                                HStack(spacing: 4) {
+                                    Image("coin")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 16, height: 16)
+                                    Text("\(item.price)")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
                             }
                             
                             Spacer()
@@ -428,8 +445,6 @@ struct ShopItemCard: View {
             return "photo"
         case .premium:
             return "star.fill"
-        case .bubble:
-            return "bubble.left"
         }
     }
 }

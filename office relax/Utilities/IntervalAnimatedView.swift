@@ -138,6 +138,12 @@ struct IntervalAnimatedView: View {
         // 确保只有当前视图是闪电动画时才播放音效
         guard animationKey == "effect.lightning" else { return }
         
+        // 确保全局音效播放功能已启用
+        guard AudioManager.shared.isSoundPlaybackEnabled else {
+            print("全局音效播放已禁用，不播放闪电音效")
+            return
+        }
+        
         // 确保闪电特效(effect_2)真正显示时才考虑播放
         guard isActuallyDisplayed() else { return }
         
