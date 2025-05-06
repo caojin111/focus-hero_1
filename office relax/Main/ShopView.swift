@@ -71,7 +71,7 @@ struct ShopView: View {
                 // 类型筛选
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        FilterButton(title: "全部", isSelected: selectedType == nil) {
+                        FilterButton(title: "All", isSelected: selectedType == nil) {
                             audioManager.playSound("click")
                             selectedType = nil
                         }
@@ -297,7 +297,7 @@ struct ShopView: View {
             userDataManager.objectWillChange.send()
         } else {
             showPurchaseDialog = false
-            errorMessage = "购买失败: \(result.errorCode)"
+            errorMessage = "Failed: \(result.errorCode)"
             showErrorDialog = true
         }
     }
@@ -312,15 +312,15 @@ struct ShopView: View {
     func getTypeTitle(_ type: ShopItem.ItemType) -> String {
         switch type {
         case .effect:
-            return "特效"
+            return "Effect"
         case .sound:
-            return "音效"
+            return "Sound"
         case .bgm:
             return "BGM"
         case .background:
-            return "背景"
+            return "Backgrounds"
         case .premium:
-            return "付费"
+            return "Package"
         }
     }
 }
@@ -390,7 +390,7 @@ struct ShopItemCard: View {
                     HStack {
                         if item.isPurchased ?? false {
                             // 装备/卸载按钮
-                            Text(isEquipped ? "卸载" : "装备")
+                            Text(isEquipped ? "Take off" : "Equip")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.white)
                                 .padding(.vertical, 4)
@@ -419,7 +419,7 @@ struct ShopItemCard: View {
                             
                             Spacer()
                             
-                            Text("购买")
+                            Text("Buy")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.white)
                                 .padding(.vertical, 4)
@@ -469,17 +469,17 @@ struct PurchaseDialog: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
-                Text("购买确认")
+                Text("Confirm")
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                Text("确认花费 \(item.price) 金币购买 \(item.name)？")
+                Text("Sure to cost \(item.price) coin to buy \(item.name)？")
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
                 HStack(spacing: 20) {
                     Button(action: onCancel) {
-                        Text("取消")
+                        Text("Cancel")
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 10)
@@ -488,7 +488,7 @@ struct PurchaseDialog: View {
                     }
                     
                     Button(action: onConfirm) {
-                        Text("购买")
+                        Text("Buy")
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 10)
@@ -519,17 +519,17 @@ struct EquipDialog: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
-                Text("装备确认")
+                Text("Confirm")
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                Text("确认装备 \(item.name)？")
+                Text("Sure to equip \(item.name)？")
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
                 HStack(spacing: 20) {
                     Button(action: onCancel) {
-                        Text("取消")
+                        Text("Cancel")
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 10)
@@ -538,7 +538,7 @@ struct EquipDialog: View {
                     }
                     
                     Button(action: onConfirm) {
-                        Text("确定")
+                        Text("Yes")
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 10)
@@ -569,17 +569,17 @@ struct UnequipDialog: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
-                Text("卸载确认")
+                Text("Confirm")
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                Text("确认卸载 \(item.name)？")
+                Text("Sure to take off \(item.name)？")
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
                 HStack(spacing: 20) {
                     Button(action: onCancel) {
-                        Text("取消")
+                        Text("Cancel")
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 10)
@@ -588,7 +588,7 @@ struct UnequipDialog: View {
                     }
                     
                     Button(action: onConfirm) {
-                        Text("确定")
+                        Text("Yes")
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 10)
@@ -618,7 +618,7 @@ struct ErrorDialog: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
-                Text("错误")
+                Text("Wrong")
                     .font(.title2)
                     .foregroundColor(.white)
                 
@@ -627,7 +627,7 @@ struct ErrorDialog: View {
                     .multilineTextAlignment(.center)
                 
                 Button(action: onDismiss) {
-                    Text("确定")
+                    Text("Yes")
                         .foregroundColor(.white)
                         .padding(.horizontal, 30)
                         .padding(.vertical, 10)

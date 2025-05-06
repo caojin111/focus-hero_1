@@ -99,7 +99,7 @@ class GiftPackageManager: NSObject, ObservableObject {
             
             // 模拟成功购买
             let success = true
-            let message = success ? "购买成功！" : "购买失败，请稍后再试"
+            let message = success ? "Purchase success！" : "Purchase failed, please try it later."
             
             if success {
                 // 添加礼包内容到用户库存

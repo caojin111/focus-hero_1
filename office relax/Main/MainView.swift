@@ -495,6 +495,8 @@ struct MainView: View {
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onAppear {
+            print("MainView 出现")
+            
             // 验证礼包商品状态
             ShopManager.shared.verifyAndFixGiftPackageItems()
             
@@ -507,11 +509,26 @@ struct MainView: View {
             setTimerPosition(x: -3, y: 50)  // 设置倒计时区域向右偏移100点，向下偏移50点
             setTimerScale(2.5)  // 设置倒计时区域缩放为1.5倍
             
-            // 确保配置已加载
-            AnimationManager.shared.reloadConfigurationAndRefresh()
-            
-            // 初始化入场动画状态
-            isHeroEntryCompleted = false
+            // 初始化入场动画状态 - 如果已装备effect_3，避免显示入场动画
+            if isWorkMode && isEffect3Equipped() {
+                // 已装备hammer girl，直接设置入场完成状态为true，跳过入场动画
+                isHeroEntryCompleted = true
+                // 通知AttackSoundManager英雄入场动画已完成
+                notifyHeroEntryState(completed: true)
+                print("检测到已装备hammer girl，跳过入场动画直接显示攻击动画")
+                
+                // 强制加载hammer girl动画
+                AnimationManager.shared.safeReloadAnimation(for: "hammer.run")
+                AnimationManager.shared.safeReloadAnimation(for: "hammer.attack")
+            } else {
+                isHeroEntryCompleted = false
+                
+                // 确保英雄动画已加载
+                if isWorkMode {
+                    AnimationManager.shared.safeReloadAnimation(for: "hero.run")
+                    AnimationManager.shared.safeReloadAnimation(for: "hero.attack")
+                }
+            }
             
             // 监听effect_3状态变更通知
             NotificationCenter.default.addObserver(
@@ -533,6 +550,29 @@ struct MainView: View {
                 }
             }
             
+            // 监听effect_6状态变更通知
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("Effect6StatusChanged"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                // 使用强制刷新View的方式来更新UI
+                DispatchQueue.main.async {
+                    // 触发视图刷新
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if self.isWorkMode {
+                            // 触发短暂的动画，促使视图重新渲染
+                            self.isHeroEntryCompleted = self.isHeroEntryCompleted
+                        }
+                    }
+                    
+                    // 强制加载cat动画
+                    if ShopManager.shared.isItemEquipped(itemId: "effect_6") {
+                        AnimationManager.shared.safeReloadAnimation(for: "effect.cat")
+                    }
+                }
+            }
+            
             // 监听OpenGiftPackage通知
             NotificationCenter.default.addObserver(
                 forName: NSNotification.Name("OpenGiftPackage"),
@@ -543,6 +583,106 @@ struct MainView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     showGiftPackage = true
                 }
+            }
+            
+            // 监听ShopManager重新加载装备状态的通知
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("ShopManagerItemsReloaded"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                // 强制刷新UI状态
+                DispatchQueue.main.async {
+                    print("MainView接收到ShopManagerItemsReloaded通知")
+                    
+                    // 强制更新AttackSoundManager中的sound_2装备状态
+                    AttackSoundManager.shared.forceUpdateSound2Status()
+                    
+                    // 根据当前装备状态，强制加载对应动画
+                    if self.isWorkMode {
+                        // 检查是否已装备effect_3
+                        if self.isEffect3Equipped() {
+                            // 已装备effect_3，设置入场完成状态并加载hammer girl动画
+                            self.isHeroEntryCompleted = true
+                            self.notifyHeroEntryState(completed: true)
+                            
+                            // 强制加载hammer girl动画
+                            AnimationManager.shared.safeReloadAnimation(for: "hammer.run")
+                            AnimationManager.shared.safeReloadAnimation(for: "hammer.attack")
+                            print("ShopManager重载后应用hammer girl状态")
+                        } else {
+                            // 没有装备effect_3，仍然使用原始英雄动画
+                            AnimationManager.shared.safeReloadAnimation(for: "hero.run")
+                            AnimationManager.shared.safeReloadAnimation(for: "hero.attack")
+                        }
+                        
+                        // 检查是否已装备effect_6
+                        if self.isEffect6Equipped() {
+                            // 强制加载cat动画
+                            AnimationManager.shared.safeReloadAnimation(for: "effect.cat")
+                            print("ShopManager重载后应用cat动画状态")
+                        }
+                        
+                        // 检查是否已装备effect_1
+                        if self.isEffect1Equipped() {
+                            // 强制加载wizard动画
+                            AnimationManager.shared.safeReloadAnimation(for: "effect.wizard_attack")
+                            print("ShopManager重载后应用wizard动画状态")
+                        }
+                    }
+                    
+                    // 触发视图刷新
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        // 这个空动画会触发视图重新计算
+                        self.timerScale = self.timerScale * 1.0001
+                    }
+                    
+                    print("响应ShopManagerItemsReloaded通知: 更新UI和音效状态")
+                }
+            }
+            
+            // 主动触发初始装备状态加载 - 这是关键
+            DispatchQueue.main.async {
+                // 主动从Keychain加载装备状态
+                ShopManager.shared.loadAndApplyEquippedItems()
+                
+                // 检查和应用effect_3状态
+                if self.isWorkMode && self.isEffect3Equipped() {
+                    // 强制重新加载hammer girl动画
+                    AnimationManager.shared.safeReloadAnimation(for: "hammer.run")
+                    AnimationManager.shared.safeReloadAnimation(for: "hammer.attack")
+                    
+                    // 设置hammer girl状态立即生效
+                    self.isHeroEntryCompleted = true
+                    self.notifyHeroEntryState(completed: true)
+                    
+                    print("应用启动: 主动加载并应用hammer girl装备状态")
+                    
+                    // 发送通知让其他组件也知道
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("Effect3StatusChanged"),
+                        object: nil,
+                        userInfo: ["isEquipped": true]
+                    )
+                }
+                
+                // 同样检查并应用effect_6状态
+                if self.isWorkMode && self.isEffect6Equipped() {
+                    // 强制重新加载cat动画
+                    AnimationManager.shared.safeReloadAnimation(for: "effect.cat")
+                    
+                    print("应用启动: 主动加载并应用cat装备状态")
+                    
+                    // 发送通知让其他组件也知道
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("Effect6StatusChanged"),
+                        object: nil,
+                        userInfo: ["isEquipped": true]
+                    )
+                }
+                
+                // 强制更新AttackSoundManager中的sound_2装备状态
+                AttackSoundManager.shared.forceUpdateSound2Status()
             }
             
             // 延迟加载内容，防止穿帮
@@ -584,7 +724,9 @@ struct MainView: View {
             
             // 移除通知监听者
             NotificationCenter.default.removeObserver(self, name: NSNotification.Name("Effect3StatusChanged"), object: nil)
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("Effect6StatusChanged"), object: nil)
             NotificationCenter.default.removeObserver(self, name: NSNotification.Name("OpenGiftPackage"), object: nil)
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("ShopManagerItemsReloaded"), object: nil)
             
             // 通知AttackSoundManager已离开MainView
             notifyViewState(viewName: "OtherView")
@@ -609,10 +751,20 @@ struct MainView: View {
                     
                     // 预先设置状态，避免后续动画闪烁
                     if isWorkMode {
-                        // 确保入场动画状态正确 - 重要修复
-                        isHeroEntryCompleted = false
+                        // 确保入场动画状态正确 - 当已装备effect_3时，直接完成入场
+                        if isEffect3Equipped() {
+                            // 已装备hammer girl，直接设置入场完成状态为true，跳过入场动画
+                            isHeroEntryCompleted = true
+                            // 通知AttackSoundManager英雄入场动画已完成
+                            notifyHeroEntryState(completed: true)
+                            print("检测到已装备hammer girl，跳过入场动画直接显示攻击动画")
+                        } else {
+                            isHeroEntryCompleted = false
+                            // 通知AttackSoundManager英雄入场动画未完成
+                            notifyHeroEntryState(completed: false)
+                        }
                         
-                        // 预加载工作模式动画
+                        // 直接预加载工作模式动画，不重置配置
                         _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                         _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                         _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
@@ -718,16 +870,23 @@ struct MainView: View {
         }
         .onChange(of: isWorkMode) { newValue in
             if newValue {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isHeroEntryCompleted = false
-                    // 通知AttackSoundManager英雄入场动画未完成
-                    notifyHeroEntryState(completed: false)
+                if isEffect3Equipped() {
+                    // 已装备hammer girl，直接设置入场完成状态为true，跳过入场动画
+                    isHeroEntryCompleted = true
+                    // 通知AttackSoundManager英雄入场动画已完成
+                    notifyHeroEntryState(completed: true)
+                    print("检测到场景切换时已装备hammer girl，跳过入场动画直接显示攻击动画")
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        isHeroEntryCompleted = false
+                        // 通知AttackSoundManager英雄入场动画未完成
+                        notifyHeroEntryState(completed: false)
+                    }
                 }
                 entryAnimationTimer?.invalidate()
                 entryAnimationTimer = nil
                 
-                // 预加载所有动画
-                AnimationManager.shared.reloadConfigurationAndRefresh()
+                // 直接预加载所需动画
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
@@ -989,16 +1148,23 @@ struct MainView: View {
         .offset(x: getHeroPositionX(), y: getHeroPositionY())
         .onChange(of: isWorkMode) { newValue in
             if newValue {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isHeroEntryCompleted = false
-                    // 通知AttackSoundManager英雄入场动画未完成
-                    notifyHeroEntryState(completed: false)
+                if isEffect3Equipped() {
+                    // 已装备hammer girl，直接设置入场完成状态为true，跳过入场动画
+                    isHeroEntryCompleted = true
+                    // 通知AttackSoundManager英雄入场动画已完成
+                    notifyHeroEntryState(completed: true)
+                    print("检测到场景切换时已装备hammer girl，跳过入场动画直接显示攻击动画")
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        isHeroEntryCompleted = false
+                        // 通知AttackSoundManager英雄入场动画未完成
+                        notifyHeroEntryState(completed: false)
+                    }
                 }
                 entryAnimationTimer?.invalidate()
                 entryAnimationTimer = nil
                 
-                // 预加载所有动画
-                AnimationManager.shared.reloadConfigurationAndRefresh()
+                // 直接预加载所需动画
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
@@ -1080,12 +1246,24 @@ struct MainView: View {
     
     // 检查是否装备了effect_3特效
     private func isEffect3Equipped() -> Bool {
+        // 先检查ShopManager的直接方法，这是最可靠的
+        if ShopManager.shared.isItemEquipped(itemId: "effect_3") {
+            return true
+        }
+        
+        // 然后检查装备数组
         return ShopManager.shared.getEquippedItems(ofType: .effect)
             .contains(where: { $0.id == "effect_3" })
     }
     
     // 检查是否装备了effect_6特效
     private func isEffect6Equipped() -> Bool {
+        // 先检查ShopManager的直接方法，这是最可靠的
+        if ShopManager.shared.isItemEquipped(itemId: "effect_6") {
+            return true
+        }
+        
+        // 然后检查装备数组
         return ShopManager.shared.getEquippedItems(ofType: .effect)
             .contains(where: { $0.id == "effect_6" })
     }
@@ -1307,8 +1485,7 @@ struct MainView: View {
                 // 重置入场动画状态（StartFocusView完成后会自动启动入场动画定时器）
                 isHeroEntryCompleted = false
                 
-                // 预加载动画
-                AnimationManager.shared.reloadConfigurationAndRefresh()
+                // 直接预加载动画，不重置配置
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
                 _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
                 _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")

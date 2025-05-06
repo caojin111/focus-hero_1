@@ -13,7 +13,17 @@ class ShopManager: ObservableObject {
     @Published var equippedBackgrounds: [ShopItem] = []
     
     private init() {
+        // 首先尝试从Keychain加载装备状态
+        loadEquippedItemsFromKeychain()
+        
+        // 然后再从UserDefaults加载（如果Keychain加载失败）
         loadItems()
+        
+        // 通知其他组件ShopManager已准备完成
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ShopManagerReady"),
+            object: nil
+        )
     }
     
     // 添加刷新方法
@@ -108,8 +118,113 @@ class ShopManager: ObservableObject {
     func saveEquippedItems() {
         var allEquippedItems = equippedEffects + equippedSounds + equippedBGMs + equippedBackgrounds
         
+        // 同时保存到UserDefaults（作为备份）
         if let encoded = try? JSONEncoder().encode(allEquippedItems) {
             UserDefaults.standard.set(encoded, forKey: "equippedItems")
+        }
+        
+        // 保存到Keychain（更安全的持久化存储）
+        saveEquippedItemsToKeychain(allEquippedItems)
+        
+        print("已保存装备状态到Keychain和UserDefaults")
+    }
+    
+    // 保存装备物品到Keychain
+    private func saveEquippedItemsToKeychain(_ items: [ShopItem]) {
+        do {
+            let data = try JSONEncoder().encode(items)
+            
+            // 使用KeychainHelper保存数据
+            KeychainHelper.standard.save(data, service: "com.lazygeng.officerelax", account: "equippedItems")
+            
+            print("成功保存\(items.count)个装备物品到Keychain")
+        } catch {
+            print("保存装备物品到Keychain失败: \(error)")
+        }
+    }
+    
+    // 从Keychain加载装备物品
+    private func loadEquippedItemsFromKeychain() {
+        print("尝试从Keychain加载装备状态")
+        
+        // 从Keychain读取数据
+        if let data = KeychainHelper.standard.read(service: "com.lazygeng.officerelax", account: "equippedItems") {
+            do {
+                let items = try JSONDecoder().decode([ShopItem].self, from: data)
+                
+                // 清空当前装备状态
+                equippedEffects.removeAll()
+                equippedSounds.removeAll()
+                equippedBGMs.removeAll()
+                equippedBackgrounds.removeAll()
+                
+                // 重新填充装备数组
+                equippedEffects = items.filter { $0.type == .effect && ($0.isEquipped ?? false) }
+                equippedSounds = items.filter { $0.type == .sound && ($0.isEquipped ?? false) }
+                equippedBGMs = items.filter { $0.type == .bgm && ($0.isEquipped ?? false) }
+                equippedBackgrounds = items.filter { $0.type == .background && ($0.isEquipped ?? false) }
+                
+                print("成功从Keychain加载\(items.count)个装备物品")
+                
+                // 执行特殊动画的初始化
+                initializeSpecialAnimationsAndEffects(items: items)
+                
+            } catch {
+                print("从Keychain解码装备物品失败: \(error)")
+            }
+        } else {
+            print("未找到Keychain中的装备数据，将尝试从UserDefaults加载")
+        }
+    }
+    
+    // 初始化特殊动画和效果
+    private func initializeSpecialAnimationsAndEffects(items: [ShopItem]) {
+        DispatchQueue.main.async {
+            for item in items {
+                if item.isEquipped ?? false {
+                    // 检查effect_3装备状态
+                    if item.id == "effect_3" {
+                        // 发送通知以刷新UI状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("Effect3StatusChanged"),
+                            object: nil,
+                            userInfo: ["isEquipped": true]
+                        )
+                        
+                        // 确保预加载hammer girl动画
+                        AnimationManager.shared.safeReloadAnimation(for: "hammer.run")
+                        AnimationManager.shared.safeReloadAnimation(for: "hammer.attack")
+                        
+                        print("Keychain: 重新装备effect_3特效，启用hammer girl动画")
+                    }
+                    
+                    // 检查effect_6装备状态
+                    else if item.id == "effect_6" {
+                        // 发送通知以刷新UI状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("Effect6StatusChanged"),
+                            object: nil,
+                            userInfo: ["isEquipped": true]
+                        )
+                        
+                        // 预加载cat动画
+                        AnimationManager.shared.safeReloadAnimation(for: "effect.cat")
+                        
+                        print("Keychain: 重新装备effect_6特效，启用cat动画")
+                    }
+                    
+                    // 检查sound_2装备状态(攻击音效)
+                    else if item.id == "sound_2" {
+                        // 发送通知以刷新攻击音效状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("EquipmentStatusChanged"),
+                            object: nil
+                        )
+                        
+                        print("Keychain: 重新装备sound_2，启用攻击音效")
+                    }
+                }
+            }
         }
     }
     
@@ -165,16 +280,21 @@ class ShopManager: ObservableObject {
             return
         }
         
+        // 记录状态是否发生变化
+        var stateChanged = false
+        
         switch item.type {
         case .effect:
             if !equippedEffects.contains(where: { $0.id == itemId }) {
                 // 添加互斥逻辑：如果装备effect_1，先卸载effect_6
-                if itemId == "effect_1" && equippedEffects.contains(where: { $0.id == "effect_6" }) {
+                if itemId == "effect_1" && isItemEquipped(itemId: "effect_6") {
                     unequipItem(itemId: "effect_6")
+                    print("互斥处理：装备effect_1时自动卸载effect_6")
                 }
                 // 添加互斥逻辑：如果装备effect_6，先卸载effect_1
-                else if itemId == "effect_6" && equippedEffects.contains(where: { $0.id == "effect_1" }) {
+                else if itemId == "effect_6" && isItemEquipped(itemId: "effect_1") {
                     unequipItem(itemId: "effect_1")
+                    print("互斥处理：装备effect_6时自动卸载effect_1")
                 }
                 
                 if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
@@ -185,6 +305,8 @@ class ShopManager: ObservableObject {
                     if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
                         shopItems[shopIndex].isEquipped = true
                     }
+                    
+                    stateChanged = true
                 }
             }
         case .sound:
@@ -197,6 +319,8 @@ class ShopManager: ObservableObject {
                     if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
                         shopItems[shopIndex].isEquipped = true
                     }
+                    
+                    stateChanged = true
                 }
             }
         case .bgm:
@@ -213,6 +337,8 @@ class ShopManager: ObservableObject {
                     
                     // 立即刷新音乐播放器状态
                     AudioManager.shared.refreshBGMPlayers()
+                    
+                    stateChanged = true
                 }
             }
         case .background:
@@ -226,6 +352,8 @@ class ShopManager: ObservableObject {
                     if let shopIndex = shopItems.firstIndex(where: { $0.id == itemId }) {
                         shopItems[shopIndex].isEquipped = true
                     }
+                    
+                    stateChanged = true
                 }
             }
         case .premium:
@@ -234,8 +362,9 @@ class ShopManager: ObservableObject {
                 // 因为这些是特效类型的premium物品，将它们添加到equippedEffects中
                 if !equippedEffects.contains(where: { $0.id == itemId }) {
                     // 添加互斥逻辑：如果装备effect_6，先卸载effect_1
-                    if itemId == "effect_6" && equippedEffects.contains(where: { $0.id == "effect_1" }) {
+                    if itemId == "effect_6" && isItemEquipped(itemId: "effect_1") {
                         unequipItem(itemId: "effect_1")
+                        print("互斥处理：装备premium的effect_6时自动卸载effect_1")
                     }
                     
                     if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
@@ -262,12 +391,23 @@ class ShopManager: ObservableObject {
                             
                             print("装备effect_3特效，启用hammer girl动画")
                         }
+                        
+                        stateChanged = true
                     }
                 }
             }
         }
         
+        // 保存装备状态
         saveEquippedItems()
+        
+        // 如果状态变化，立即保存到keychain确保持久化
+        if stateChanged {
+            let allEquippedItems = equippedEffects + equippedSounds + equippedBGMs + equippedBackgrounds
+            saveEquippedItemsToKeychain(allEquippedItems)
+            print("装备状态已变更，已立即保存到KeyChain，当前装备总数: \(allEquippedItems.count)")
+        }
+        
         objectWillChange.send()
     }
     
@@ -276,42 +416,63 @@ class ShopManager: ObservableObject {
             return
         }
         
+        // 记录状态是否发生变化
+        var stateChanged = false
+        
         switch item.type {
         case .effect:
             if let index = purchasedItems.firstIndex(where: { $0.id == itemId }) {
                 purchasedItems[index].isEquipped = false
                 equippedEffects.removeAll(where: { $0.id == itemId })
                 
-                // 如果是effect_1，重新加载动画配置
+                stateChanged = true
+                
+                // 如果是effect_1，不再重置所有动画配置
                 if itemId == "effect_1" {
-                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                    // 改为安全重载wizard动画
+                    AnimationManager.shared.safeReloadAnimation(for: "effect.wizard_attack")
+                    
+                    // 发送通知以刷新UI
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("Effect1StatusChanged"),
+                        object: nil,
+                        userInfo: ["isEquipped": false]
+                    )
                 }
-                // 如果是effect_6，重新加载动画配置
+                // 如果是effect_6，不再重置所有动画配置
                 else if itemId == "effect_6" {
-                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                    // 改为安全重载cat动画
+                    AnimationManager.shared.safeReloadAnimation(for: "effect.cat")
+                    
+                    // 发送通知以刷新UI
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("Effect6StatusChanged"),
+                        object: nil,
+                        userInfo: ["isEquipped": false]
+                    )
                 }
-                // 如果是effect_2，重新加载动画配置
+                // 如果是effect_2，不再重置所有动画配置
                 else if itemId == "effect_2" {
-                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                    // 改为安全重载闪电动画
+                    AnimationManager.shared.safeReloadAnimation(for: "effect.lightning")
                     
                     // 停止闪电音效播放
                     AudioManager.shared.stopSound("shop_thunder")
                     
-                    // 可选：提示用户可能也需要卸载对应的声音
                     print("已卸载闪电特效，闪电音效将不再播放")
                 }
-                // 如果是effect_5，重新加载动画配置
+                // 如果是effect_5，不再重置所有动画配置
                 else if itemId == "effect_5" {
-                    AnimationManager.shared.reloadConfigurationAndRefresh()
+                    // 改为安全重载旅人动画
+                    AnimationManager.shared.safeReloadAnimation(for: "traveller.sit")
                     print("已卸载旅人特效")
                 }
-                // 如果是effect_3，重新加载动画配置
+                // 如果是effect_3，不再重置所有动画配置
                 else if itemId == "effect_3" {
-                    AnimationManager.shared.reloadConfigurationAndRefresh()
-                    
-                    // 预加载原始英雄动画
-                    _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
-                    _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                    // 不再重置动画配置，只预加载原始英雄动画
+                    // 改为安全重载英雄动画
+                    AnimationManager.shared.safeReloadAnimation(for: "hero.run")
+                    AnimationManager.shared.safeReloadAnimation(for: "hero.attack")
                     
                     print("已卸载effect_3特效，恢复原始英雄动画")
                     
@@ -392,11 +553,10 @@ class ShopManager: ObservableObject {
                     
                     // 对effect_3特效的特殊处理
                     if itemId == "effect_3" {
-                        AnimationManager.shared.reloadConfigurationAndRefresh()
-                        
-                        // 预加载原始英雄动画
-                        _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
-                        _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                        // 不再重置动画配置，只预加载原始英雄动画
+                        // 改为安全重载英雄动画
+                        AnimationManager.shared.safeReloadAnimation(for: "hero.run")
+                        AnimationManager.shared.safeReloadAnimation(for: "hero.attack")
                         
                         print("已卸载effect_3特效，恢复原始英雄动画")
                         
@@ -409,8 +569,17 @@ class ShopManager: ObservableObject {
                     }
                     // 对effect_6特效的特殊处理
                     else if itemId == "effect_6" {
-                        AnimationManager.shared.reloadConfigurationAndRefresh()
+                        // 不再重置动画配置
+                        // 改为安全重载cat动画
+                        AnimationManager.shared.safeReloadAnimation(for: "effect.cat")
                         print("已卸载effect_6特效")
+                        
+                        // 发送通知以刷新UI状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("Effect6StatusChanged"),
+                            object: nil,
+                            userInfo: ["isEquipped": false]
+                        )
                     }
                 }
             }
@@ -418,6 +587,13 @@ class ShopManager: ObservableObject {
         
         // 保存装备状态
         saveEquippedItems()
+        
+        // 如果状态变化，立即保存到keychain确保持久化
+        if stateChanged {
+            let allEquippedItems = equippedEffects + equippedSounds + equippedBGMs + equippedBackgrounds
+            saveEquippedItemsToKeychain(allEquippedItems)
+            print("卸载状态已变更，已立即保存到KeyChain，当前装备总数: \(allEquippedItems.count)")
+        }
         
         // 通知观察者装备状态已更改
         objectWillChange.send()
@@ -516,6 +692,121 @@ class ShopManager: ObservableObject {
                 objectWillChange.send()
                 print("已修复礼包物品的购买状态")
             }
+        }
+    }
+    
+    // 添加一个方法专门处理应用程序恢复时加载和应用已装备的物品
+    func loadAndApplyEquippedItems() {
+        // 清空当前装备状态
+        equippedEffects.removeAll()
+        equippedSounds.removeAll()
+        equippedBGMs.removeAll()
+        equippedBackgrounds.removeAll()
+        
+        // 优先从Keychain加载
+        print("应用恢复: 尝试从Keychain加载装备状态")
+        if let data = KeychainHelper.standard.read(service: "com.lazygeng.officerelax", account: "equippedItems") {
+            do {
+                let items = try JSONDecoder().decode([ShopItem].self, from: data)
+                
+                // 重新填充装备数组
+                equippedEffects = items.filter { $0.type == .effect && ($0.isEquipped ?? false) }
+                equippedSounds = items.filter { $0.type == .sound && ($0.isEquipped ?? false) }
+                equippedBGMs = items.filter { $0.type == .bgm && ($0.isEquipped ?? false) }
+                equippedBackgrounds = items.filter { $0.type == .background && ($0.isEquipped ?? false) }
+                
+                print("应用恢复: 成功从Keychain加载\(items.count)个装备物品")
+                
+                // 执行特殊动画的初始化
+                initializeSpecialAnimationsAndEffects(items: items)
+                
+                // 确保BGM播放器状态与装备状态一致
+                AudioManager.shared.refreshBGMPlayers()
+                
+                // 通知其他组件ShopManager已重新加载装备状态
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("ShopManagerItemsReloaded"),
+                    object: nil
+                )
+                
+                return // 如果Keychain加载成功，就直接返回
+            } catch {
+                print("应用恢复: 从Keychain解码装备物品失败，将尝试UserDefaults: \(error)")
+            }
+        }
+        
+        // 如果Keychain加载失败，尝试从UserDefaults加载
+        if let data = UserDefaults.standard.data(forKey: "equippedItems"),
+           let items = try? JSONDecoder().decode([ShopItem].self, from: data) {
+            
+            // 重新填充装备数组
+            equippedEffects = items.filter { $0.type == .effect && ($0.isEquipped ?? false) }
+            equippedSounds = items.filter { $0.type == .sound && ($0.isEquipped ?? false) }
+            equippedBGMs = items.filter { $0.type == .bgm && ($0.isEquipped ?? false) }
+            equippedBackgrounds = items.filter { $0.type == .background && ($0.isEquipped ?? false) }
+            
+            // 确保特殊物品的效果被正确应用
+            for item in items {
+                if item.isEquipped ?? false {
+                    // 检查effect_3装备状态
+                    if item.id == "effect_3" {
+                        // 发送通知以刷新UI状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("Effect3StatusChanged"),
+                            object: nil,
+                            userInfo: ["isEquipped": true]
+                        )
+                        
+                        // 确保预加载hammer girl动画
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                        _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                        
+                        print("重新装备effect_3特效，启用hammer girl动画")
+                    }
+                    
+                    // 检查effect_6装备状态
+                    else if item.id == "effect_6" {
+                        // 发送通知以刷新UI状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("Effect6StatusChanged"),
+                            object: nil,
+                            userInfo: ["isEquipped": true]
+                        )
+                        
+                        // 预加载cat动画
+                        _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
+                        
+                        print("重新装备effect_6特效，启用cat动画")
+                    }
+                    
+                    // 检查sound_2装备状态(攻击音效)
+                    else if item.id == "sound_2" {
+                        // 发送通知以刷新攻击音效状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("EquipmentStatusChanged"),
+                            object: nil
+                        )
+                        
+                        print("重新装备sound_2，启用攻击音效")
+                    }
+                }
+            }
+            
+            // 确保BGM播放器状态与装备状态一致
+            AudioManager.shared.refreshBGMPlayers()
+            
+            print("已重新加载\(items.count)个装备物品")
+            
+            // 同时保存到Keychain，确保下次能从Keychain加载
+            saveEquippedItemsToKeychain(items)
+            
+            // 通知其他组件ShopManager已重新加载装备状态
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ShopManagerItemsReloaded"),
+                object: nil
+            )
+        } else {
+            print("没有找到已装备的物品数据")
         }
     }
 } 

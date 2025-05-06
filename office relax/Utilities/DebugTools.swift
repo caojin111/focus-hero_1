@@ -12,7 +12,17 @@ struct DebugToolsView: View {
             List {
                 Section(header: Text("动画配置")) {
                     Button("重新加载动画配置") {
-                        animationManager.reloadConfigurationAndRefresh()
+                        // 不要强制刷新动画，避免重置角色状态
+                        // animationManager.reloadConfigurationAndRefresh() - 注释掉
+                        
+                        // 如果需要预加载特定动画，可以用以下替代
+                        if ShopManager.shared.isItemEquipped(itemId: "effect_3") {
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                        } else {
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+                            _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                        }
                         showAlert(message: "动画配置已重新加载")
                     }
                 }

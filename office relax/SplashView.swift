@@ -53,7 +53,7 @@ struct SplashView: View {
             // 标题动画效果
             withAnimation(.easeOut(duration: 1.0)) {
                 titleOpacity = 1.0
-                titleScale = 1.0
+                titleScale = 1.5
             }
             
             // 延迟2秒后跳转到主界面

@@ -118,7 +118,7 @@ struct GiftPackageView: View {
                         audioManager.playSound("click")
                             restorePackage()
                     }) {
-                        Text("恢复购买")
+                        Text("Restore")
                             .font(.system(size: 14))
                             .foregroundColor(.white.opacity(0.8))
                     }
@@ -179,11 +179,11 @@ struct GiftPackageView: View {
                 }
             
             VStack(spacing: 20) {
-                Text("确认购买")
+                Text("Confirm")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 
-                Text("确定购买\(giftManager.starterPackage.name)吗？")
+                Text("Sure to purchase\(giftManager.starterPackage.name)")
                     .font(.system(size: 18))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
@@ -193,7 +193,7 @@ struct GiftPackageView: View {
                         audioManager.playSound("click")
                         showConfirmation = false
                     }) {
-                        Text("取消")
+                        Text("Cancel")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
@@ -209,7 +209,7 @@ struct GiftPackageView: View {
                         // 处理购买
                         purchasePackage()
                     }) {
-                        Text("确认")
+                        Text("Yes")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
@@ -241,11 +241,11 @@ struct GiftPackageView: View {
                     .font(.system(size: 60))
                     .foregroundColor(.green)
                 
-                Text("购买成功！")
+                Text("Purchase success!")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 
-                Text("礼包中的物品已添加到您的道具清单中。")
+                Text("Items in package are now in your item list.")
                     .font(.system(size: 16))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
@@ -255,7 +255,7 @@ struct GiftPackageView: View {
                     showSuccessAlert = false
                     presentationMode.wrappedValue.dismiss()
                 }) {
-                    Text("好的")
+                    Text("OK")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 50)
@@ -285,7 +285,7 @@ struct GiftPackageView: View {
                     .font(.system(size: 60))
                     .foregroundColor(.orange)
                 
-                Text("操作提示")
+                Text("Tips")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 
@@ -298,7 +298,7 @@ struct GiftPackageView: View {
                     audioManager.playSound("click")
                     showRestoreFailedAlert = false
                 }) {
-                    Text("确定")
+                    Text("Yes")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 50)
@@ -317,13 +317,13 @@ struct GiftPackageView: View {
     private func purchasePackage() {
         giftManager.purchaseGiftPackage { success, message in
             if success {
-                print("礼包购买成功")
+                print("Purchase success")
                 showSuccessAlert = true
                 
                 // 验证并修复礼包物品状态
                 ShopManager.shared.verifyAndFixGiftPackageItems()
             } else {
-                print("礼包购买失败: \(message)")
+                print("Purchase failed: \(message)")
                 errorMessage = message
                 showErrorAlert = true
             }
@@ -333,13 +333,13 @@ struct GiftPackageView: View {
     private func restorePackage() {
         giftManager.restorePurchases { success, message in
             if success {
-                print("恢复购买成功")
+                print("Restore success")
                 showSuccessAlert = true
                 
                 // 验证并修复礼包物品状态
                 ShopManager.shared.verifyAndFixGiftPackageItems()
             } else {
-                print("恢复购买失败: \(message)")
+                print("Restore failed: \(message)")
                 restoreFailedMessage = message
                 showRestoreFailedAlert = true
             }

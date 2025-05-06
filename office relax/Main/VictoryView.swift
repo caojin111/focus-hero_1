@@ -46,8 +46,11 @@ struct VictoryView: View {
         self.coinsEarned = coinsEarned
         self.onComplete = onComplete
         
-        // 预加载所有相关动画资源
-        AnimationManager.shared.reloadConfigurationAndRefresh()
+        // 预加载所需动画，但不重置整个配置
+        // AnimationManager.shared.reloadConfigurationAndRefresh() - 注释掉
+        
+        // 只预加载可能需要的动画
+        _ = AnimationManager.shared.getAnimationInfo(for: "effect.confetti")
     }
     
     var body: some View {
