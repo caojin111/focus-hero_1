@@ -22,7 +22,7 @@ struct GiftPackage: Codable, Identifiable {
     static func createStarterPackage() -> GiftPackage {
         return GiftPackage(
             id: "starter_package_0.99",
-            name: "初学者礼包",
+            name: "Starter pack",
             price: 0.99,
             priceString: "$0.99",
             description: "包含两个特效道具，提升您的工作体验",

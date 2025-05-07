@@ -35,6 +35,7 @@ struct SplashView: View {
                     .frame(maxWidth: 300)
                     .opacity(titleOpacity)
                     .scaleEffect(titleScale)
+                    .offset(x: -8)
                 Spacer()
                 // 作者署名
                 Image("Splash_text")

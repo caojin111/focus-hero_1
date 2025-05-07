@@ -40,7 +40,7 @@ struct GiftPackageView: View {
                 
                 // 包含内容 - 向上移动80像素，向右移动100像素
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("包含内容:")
+                    Text("Contained:")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.bottom, 5)
@@ -79,7 +79,7 @@ struct GiftPackageView: View {
                         }
                     }) {
                         HStack {
-                            Text(isPackagePurchased ? "Purchased" : "立即购买")
+                            Text(isPackagePurchased ? "Purchased" : "Purchase")
                                 .font(.system(size: 16, weight: .bold))
                             
                             if !isPackagePurchased {
@@ -183,7 +183,7 @@ struct GiftPackageView: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 
-                Text("Sure to purchase\(giftManager.starterPackage.name)")
+                Text("Sure to purchase \(giftManager.starterPackage.name)")
                     .font(.system(size: 18))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
