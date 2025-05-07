@@ -382,10 +382,10 @@ struct OnboardingView: View {
             // 时间设置容器
             VStack(spacing: 30) {
                 // 专注时间设置
-                timeSettingView(title: "专注时间", value: $focusTime, range: 5...60, step: 5, color: .blue, minLabel: "5分钟", maxLabel: "60分钟")
+                timeSettingView(title: "Focus Time", value: $focusTime, range: 5...60, step: 5, color: .blue, minLabel: "5 minutes", maxLabel: "60 minutes")
                 
                 // 休息时间设置
-                timeSettingView(title: "休息时间", value: $breakTime, range: 1...20, step: 1, color: .green, minLabel: "1分钟", maxLabel: "20分钟")
+                timeSettingView(title: "Break Time", value: $breakTime, range: 1...20, step: 1, color: .green, minLabel: "1 minute", maxLabel: "20 minutes")
             }
             .opacity(controlsOpacity1)
             .padding(.horizontal)
@@ -398,7 +398,7 @@ struct OnboardingView: View {
                     currentPage += 1
                 }
             }) {
-                Text("继续")
+                Text("Continue")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -442,7 +442,7 @@ struct OnboardingView: View {
                 Text(title)
                     .font(.system(size: 22, weight: .bold))
                 Spacer()
-                Text("\(Int(value.wrappedValue)) 分钟")
+                Text("\(Int(value.wrappedValue))  minutes")
                     .font(.system(size: 22, weight: .bold))
             }
             .foregroundColor(.white)
@@ -505,7 +505,7 @@ struct OnboardingView: View {
             
             // 英雄名称输入区域
             VStack(alignment: .leading, spacing: 15) {
-                Text("输入你的英雄名称")
+                Text("Enter your hero's name")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 
@@ -521,7 +521,7 @@ struct OnboardingView: View {
                             .stroke(Color.white.opacity(0.5), lineWidth: 1)
                     )
                     .placeholder(when: heroName.isEmpty) {
-                        Text("例如：Lazy Cat")
+                        Text("e.g.: Lazy Cat")
                             .foregroundColor(.white.opacity(0.7))
                             .padding(.leading, 16)
                     }
@@ -553,7 +553,7 @@ struct OnboardingView: View {
                     }
                 }
             }) {
-                Text("完成设置")
+                Text("Complete Setup")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

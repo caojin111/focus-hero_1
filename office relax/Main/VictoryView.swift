@@ -28,6 +28,9 @@ struct VictoryView: View {
     @State private var tipOpacity = 0.0
     @State private var tipFlash = false
     
+    // 保存之前的音效播放状态
+    @State private var previousSoundPlaybackState: Bool = true
+    
     // 拖影效果相关状态
     @State private var trailEffectEnabled = false
     @State private var previousBossFrames: [UIImage?] = [nil, nil, nil]
@@ -51,6 +54,32 @@ struct VictoryView: View {
         
         // 只预加载可能需要的动画
         _ = AnimationManager.shared.getAnimationInfo(for: "effect.confetti")
+        
+        // 通知AttackSoundManager不在MainView
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ViewStateChanged"),
+            object: nil,
+            userInfo: ["viewName": "VictoryView"]
+        )
+        
+        // 通知系统在胜利界面 - 禁用闪电特效音效播放
+        NotificationCenter.default.post(
+            name: NSNotification.Name("WorkModeChanged"),
+            object: nil,
+            userInfo: ["isWorkMode": false]
+        )
+        
+        // 特殊通知完全禁用闪电音效
+        NotificationCenter.default.post(
+            name: NSNotification.Name("DisableLightningEffects"),
+            object: nil,
+            userInfo: ["isDisabled": true]
+        )
+        
+        // 强制停止已有的闪电音效
+        DispatchQueue.main.async {
+            AudioManager.shared.stopSound("shop_thunder")
+        }
     }
     
     var body: some View {
@@ -146,24 +175,99 @@ struct VictoryView: View {
             .padding()
         }
         .onAppear {
+            // 保存当前音效播放状态
+            previousSoundPlaybackState = AudioManager.shared.isSoundPlaybackEnabled
+            
+            // 临时禁用全局音效播放
+            AudioManager.shared.isSoundPlaybackEnabled = false
+            
+            // 停止相关音效
+            stopAllRelevantSounds()
+            
+            // 禁用AttackSoundManager的音效触发
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ViewStateChanged"),
+                object: nil,
+                userInfo: ["viewName": "VictoryView"]
+            )
+            
+            // 通知AttackSoundManager不完成英雄入场动画
+            NotificationCenter.default.post(
+                name: NSNotification.Name("HeroEntryAnimationCompleted"),
+                object: nil,
+                userInfo: ["completed": false]
+            )
+            
+            // 临时设置为休息模式，禁用闪电动画的音效播放
+            NotificationCenter.default.post(
+                name: NSNotification.Name("WorkModeChanged"),
+                object: nil,
+                userInfo: ["isWorkMode": false]
+            )
+            
             // 开始动画序列
             startAnimations()
+            
+            // 延迟0.5秒后再次停止所有音效，以防新的音效开始播放
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                stopAllRelevantSounds()
+                AudioManager.shared.stopAllShopSounds()
+            }
         }
         .onTapGesture {
             if tipOpacity > 0 {
                 // 停止所有定时器
                 stopAllTimers()
                 
+                // 停止所有相关音效
+                stopAllRelevantSounds()
+                
+                // 临时启用全局音效，仅用于播放点击音效
+                AudioManager.shared.isSoundPlaybackEnabled = true
+                
                 // 播放点击音效
                 AudioManager.shared.playSound("click")
                 
-                // 调用完成回调
-                onComplete()
+                // 调用完成回调前，通知系统重置
+                DispatchQueue.main.async {
+                    // 恢复之前的音效播放状态
+                    AudioManager.shared.isSoundPlaybackEnabled = self.previousSoundPlaybackState
+                    
+                    // 通知AttackSoundManager状态即将切换回MainView
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("ViewStateChanged"),
+                        object: nil,
+                        userInfo: ["viewName": "MainView"]
+                    )
+                    
+                    // 通知系统恢复工作模式（如果需要）
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("WorkModeChanged"),
+                        object: nil,
+                        userInfo: ["isWorkMode": true]
+                    )
+                    
+                    // 重新启用闪电音效（如果需要）
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("DisableLightningEffects"),
+                        object: nil,
+                        userInfo: ["isDisabled": false]
+                    )
+                    
+                    // 调用完成回调
+                    self.onComplete()
+                }
             }
         }
         .onDisappear {
             // 确保离开页面时停止所有定时器
             stopAllTimers()
+            
+            // 停止所有相关音效
+            stopAllRelevantSounds()
+            
+            // 恢复之前的音效播放状态
+            AudioManager.shared.isSoundPlaybackEnabled = previousSoundPlaybackState
         }
     }
     
@@ -194,6 +298,32 @@ struct VictoryView: View {
         // 停止拖影效果定时器
         trailEffectTimer?.invalidate()
         trailEffectTimer = nil
+    }
+    
+    // 停止所有相关音效的辅助方法
+    private func stopAllRelevantSounds() {
+        // 停止攻击音效和闪电音效
+        AudioManager.shared.stopSound("attack")
+        AudioManager.shared.stopSound("shop_thunder")
+        
+        // 停止所有商店音效，确保没有残留的音效
+        AudioManager.shared.stopAllShopSounds()
+        
+        // 临时设置为休息模式，确保闪电动画不会自动播放音效
+        NotificationCenter.default.post(
+            name: NSNotification.Name("WorkModeChanged"),
+            object: nil,
+            userInfo: ["isWorkMode": false]
+        )
+        
+        // 特殊通知完全禁用闪电音效
+        NotificationCenter.default.post(
+            name: NSNotification.Name("DisableLightningEffects"),
+            object: nil,
+            userInfo: ["isDisabled": true]
+        )
+        
+        print("胜利界面: 已停止所有相关音效播放")
     }
     
     // 启动动画序列

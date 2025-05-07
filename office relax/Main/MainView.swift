@@ -329,7 +329,7 @@ struct MainView: View {
                                 .scaledToFit()
                                 .frame(width: 20, height: 20)
                             Text("\(userDataManager.userProfile.coins)")
-                                .foregroundColor(.black)
+                                .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
                                 .fontWeight(.bold)
                         }
                         .padding(.horizontal, 10)
@@ -384,12 +384,13 @@ struct MainView: View {
                             }
                         }
                         .padding(.horizontal)
+                        .padding(.top, 20) // 向下移动20像素
                     }
                     
                     // 状态和奖励显示 - 移到上方
                     HStack(spacing: 20) {
                         // 状态文本
-                        Text(isWorkMode ? "Hero is focus on work" : "Enjoy your rest time......")
+                        Text(isWorkMode ? "Hero is focusing on work" : "Enjoy your rest time...")
                             .foregroundColor(.white)
                             .font(.subheadline)
                             .padding(.horizontal, 12)
@@ -401,6 +402,7 @@ struct MainView: View {
                                     .frame(height: 30)
                             )
                             .cornerRadius(6)
+                            .offset(x: isWorkMode ? 0 : 8, y: isWorkMode ? 0 : -30) // 休息模式下向右8像素，向上30像素
                         
                         // 金币奖励预览（仅工作模式显示）
                         if isWorkMode {
@@ -413,7 +415,7 @@ struct MainView: View {
                                     .scaledToFit()
                                     .frame(width: 16, height: 16)
                                 Text("\(previewCoinsReward())")
-                                    .foregroundColor(.black)
+                                    .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
                                     .fontWeight(.bold)
                             }
                             .padding(.horizontal, 12)
@@ -714,6 +716,7 @@ struct MainView: View {
                 showStartFocus = true
             }
         }
+        .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onDisappear {
             // 离开页面时停止音乐
             audioManager.stopAllMusic()

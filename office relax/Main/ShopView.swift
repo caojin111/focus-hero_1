@@ -58,7 +58,7 @@ struct ShopView: View {
                             .frame(width: 30, height: 30)
                         Text("\(userDataManager.userProfile.coins)")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
@@ -413,7 +413,7 @@ struct ShopItemCard: View {
                                         .frame(width: 16, height: 16)
                                     Text("\(item.price)")
                                         .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
                                 }
                             }
                             
@@ -473,9 +473,16 @@ struct PurchaseDialog: View {
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                Text("Sure to cost \(item.price) coin to buy \(item.name)？")
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
+                HStack(spacing: 4) {
+                    Text("Sure to spend")
+                        .foregroundColor(.white)
+                    Text("\(item.price)")
+                        .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
+                        .fontWeight(.bold)
+                    Text("coins to buy \(item.name)?")
+                        .foregroundColor(.white)
+                }
+                .multilineTextAlignment(.center)
                 
                 HStack(spacing: 20) {
                     Button(action: onCancel) {

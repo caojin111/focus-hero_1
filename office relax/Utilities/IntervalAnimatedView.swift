@@ -14,6 +14,7 @@ struct IntervalAnimatedView: View {
     @State private var isPaused: Bool = false
     @State private var lastAnimationStart: Date = Date()
     @State private var isInWorkMode: Bool = true  // 默认为工作模式
+    @State private var isLightningEffectsDisabled: Bool = false
     
     // 添加用于监测是否真正显示的属性
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -111,6 +112,23 @@ struct IntervalAnimatedView: View {
                     }
                 }
             }
+            
+            // 监听胜利界面特殊通知 - 完全禁用闪电音效
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("DisableLightningEffects"),
+                object: nil,
+                queue: .main
+            ) { notification in
+                if let isDisabled = notification.userInfo?["isDisabled"] as? Bool {
+                    self.isLightningEffectsDisabled = isDisabled
+                    print("闪电音效\(isDisabled ? "已禁用" : "已启用") (通过特殊通知)")
+                    
+                    // 如果禁用闪电音效，立即停止相关音效
+                    if isDisabled && animationKey == "effect.lightning" {
+                        AudioManager.shared.stopSound("shop_thunder")
+                    }
+                }
+            }
         }
         .onDisappear {
             // 清理计时器和通知
@@ -137,6 +155,12 @@ struct IntervalAnimatedView: View {
     private func playLightningSoundIfEquipped() {
         // 确保只有当前视图是闪电动画时才播放音效
         guard animationKey == "effect.lightning" else { return }
+        
+        // 检查是否通过特殊通知禁用了闪电音效
+        guard !isLightningEffectsDisabled else {
+            print("闪电音效通过特殊通知禁用，跳过播放")
+            return
+        }
         
         // 确保全局音效播放功能已启用
         guard AudioManager.shared.isSoundPlaybackEnabled else {
