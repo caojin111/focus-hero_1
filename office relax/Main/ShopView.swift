@@ -473,12 +473,15 @@ struct PurchaseDialog: View {
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                HStack(spacing: 4) {
-                    Text("Sure to spend")
-                        .foregroundColor(.white)
-                    Text("\(item.price)")
-                        .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
-                        .fontWeight(.bold)
+                VStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        Text("Sure to spend")
+                            .foregroundColor(.white)
+                        Text("\(item.price)")
+                            .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
+                            .fontWeight(.bold)
+                    }
+                    
                     Text("coins to buy \(item.name)?")
                         .foregroundColor(.white)
                 }

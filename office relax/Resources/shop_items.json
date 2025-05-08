@@ -1,24 +1,24 @@
 [
     {
         "id": "effect_1",
-        "name": "A wizard",
+        "name": "Evil wizard",
         "description": "Let a wizard to help your hero!",
-        "price": 0,
+        "price": 2000,
         "imageName": "shop_wizard",
         "type": "effect"
     },
     {
         "id": "effect_2",
-        "name": "lightning",
+        "name": "lightning effect",
         "description": "Summon a lightning to shock your enemy!",
-        "price": 0,
+        "price": 2000,
         "imageName": "effect_lightning",
         "type": "effect"
     },
     {
         "id": "effect_3",
         "name": "Hammer girl",
-        "description": "Change your hero into a hammer girl!",
+        "description": "Change your hero into a cool damn hammer girl!",
         "price": 100000,
         "priceString": "starter pack",
         "imageName": "effect_hammer",
@@ -27,22 +27,22 @@
     {
         "id": "effect_4",
         "name": "BOSS HP",
-        "description": "Show the boss's HP bar!",
-        "price": 0,
+        "description": "Show the boss's HP bar! I bet boss don't like it",
+        "price": 5000,
         "imageName": "hp",
         "type": "effect"
     },
     {
         "id": "effect_5",
         "name": "Traveller",
-        "description": "A traveller will company you when you resting.",
-        "price": 0,
+        "description": "A traveller will company you when you resting",
+        "price": 10000,
         "imageName": "traveller",
         "type": "effect"
     },
     {
         "id": "effect_6",
-        "name": "A boring cat",
+        "name": "Boring cat",
         "description": "She thinks your battle is so boring >.<",
         "price": 100000,
         "priceString": "starter pack",
@@ -53,7 +53,7 @@
         "id": "sound_1",
         "name": "lightning sound",
         "description": "let your lightning magic sounds to be heard",
-        "price": 0,
+        "price": 8000,
         "imageName": "sound_lightning",
         "type": "sound"
     },
@@ -61,39 +61,39 @@
         "id": "sound_2",
         "name": "slashing sound",
         "description": "let your slashing sound to be heard",
-        "price": 0,
+        "price": 12000,
         "imageName": "slash",
         "type": "sound"
     },
     {
         "id": "bgm_1",
         "name": "peaceful mind",
-        "description": "A peaceful countryside background music.",
-        "price": 0,
+        "description": "Please hold me and kiss me forever",
+        "price": 15000,
         "imageName": "bgm_countryside",
         "type": "bgm"
     },
     {
         "id": "bgm_2",
         "name": "don't be afraid",
-        "description": "A horror background music.",
-        "price": 0,
+        "description": "Don't stare at me...I know you are here",
+        "price": 15000,
         "imageName": "bgm_horror",
         "type": "bgm"
     },
     {
         "id": "bg_1",
         "name": "the last of us",
-        "description": "the last of us",
-        "price": 0,
+        "description": "What would you do if today is the last day",
+        "price": 20000,
         "imageName": "bg_work_2",
         "type": "background"
     },
     {
         "id": "bg_2",
         "name": "secret cave",
-        "description": "there is a huge cave",
-        "price": 0,
+        "description": "Come on! There can't be a big cave here.",
+        "price": 20000,
         "imageName": "bg_relax_2",
         "type": "background"
     }

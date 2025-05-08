@@ -233,7 +233,7 @@ struct HighQualityAnimatedImageView: UIViewRepresentable {
             imageView.startAnimating()
             
             // 重新启动帧监控
-            if let animationKey = animationKey, images.count > 0 {
+            if let _ = animationKey, images.count > 0 {
                 let fps = Double(images.count) / (imageView.animationDuration > 0 ? imageView.animationDuration : 1.0)
                 setupFrameMonitor(fps: fps, frameCount: images.count)
             }
@@ -329,7 +329,7 @@ struct MainView: View {
                                 .scaledToFit()
                                 .frame(width: 20, height: 20)
                             Text("\(userDataManager.userProfile.coins)")
-                                .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
+                                .foregroundColor(.black)
                                 .fontWeight(.bold)
                         }
                         .padding(.horizontal, 10)
@@ -390,7 +390,7 @@ struct MainView: View {
                     // 状态和奖励显示 - 移到上方
                     HStack(spacing: 20) {
                         // 状态文本
-                        Text(isWorkMode ? "Hero is focusing on work" : "Enjoy your rest time...")
+                        Text(isWorkMode ? "Hero is focusing..." : "Enjoy your rest time...")
                             .foregroundColor(.white)
                             .font(.subheadline)
                             .padding(.horizontal, 12)
@@ -415,7 +415,7 @@ struct MainView: View {
                                     .scaledToFit()
                                     .frame(width: 16, height: 16)
                                 Text("\(previewCoinsReward())")
-                                    .foregroundColor(Color(red: 0.95, green: 0.6, blue: 0.2))
+                                    .foregroundColor(.black)
                                     .fontWeight(.bold)
                             }
                             .padding(.horizontal, 12)
@@ -1649,9 +1649,10 @@ struct MainView: View {
     
     // 暂停动画 - 通过更新AnimationManager实现
     private func pauseAnimations() {
-        let animationKeys = isWorkMode ? 
-            ["hero.attack", "boss.idle"] : 
-            ["hero.relax", "fireplace.burn"]
+        // 未使用的变量，改为注释
+        // let animationKeys = isWorkMode ? 
+        //     ["hero.attack", "boss.idle"] : 
+        //     ["hero.relax", "fireplace.burn"]
         
         // 通知每个动画视图暂停
         NotificationCenter.default.post(

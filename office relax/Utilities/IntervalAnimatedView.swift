@@ -34,20 +34,23 @@ struct IntervalAnimatedView: View {
                     handleAnimationCompleted()
                 }
                 .onAppear {
-                    // 记录动画开始时间
-                    lastAnimationStart = Date()
-                    print("开始播放动画 \(animationKey) 时间: \(lastAnimationStart)")
-                    
-                    // 如果是闪电动画且用户装备了闪电音效，同时播放音效
-                    if animationKey == "effect.lightning" {
-                        // 只有当闪电特效真正装备且显示时才播放
-                        if isActuallyDisplayed() {
-                            playLightningSoundIfEquipped()
+                    // 使用DispatchQueue.main.async来避免在视图更新期间修改状态
+                    DispatchQueue.main.async {
+                        // 记录动画开始时间
+                        lastAnimationStart = Date()
+                        print("开始播放动画 \(animationKey) 时间: \(lastAnimationStart)")
+                        
+                        // 如果是闪电动画且用户装备了闪电音效，同时播放音效
+                        if animationKey == "effect.lightning" {
+                            // 只有当闪电特效真正装备且显示时才播放
+                            if isActuallyDisplayed() {
+                                playLightningSoundIfEquipped()
+                            }
                         }
+                        
+                        // 作为备份，设置一个定时器确保在动画完成后触发间隔
+                        setupBackupCompletionTimer()
                     }
-                    
-                    // 作为备份，设置一个定时器确保在动画完成后触发间隔
-                    setupBackupCompletionTimer()
                 }
                 .background(GeometryReader { geo in
                     // 使用GeometryReader检测视图是否真正可见
@@ -66,7 +69,10 @@ struct IntervalAnimatedView: View {
                         // 如果是首次渲染并且未开始播放动画，手动开始计时器
                         if !animationCompleted && !isPaused {
                             print("初始化动画 \(animationKey) 的首次播放")
-                            startAnimation(afterDelay: 0.1)
+                            // 使用异步调用避免在视图更新期间修改状态
+                            DispatchQueue.main.async {
+                                startAnimation(afterDelay: 0.1)
+                            }
                         }
                     }
             }
@@ -74,7 +80,10 @@ struct IntervalAnimatedView: View {
         .onAppear {
             // 确保初始状态是播放
             if !shouldPlay && !animationCompleted && !isPaused {
-                startAnimation(afterDelay: 0.1)
+                // 使用异步调用避免在视图更新期间修改状态
+                DispatchQueue.main.async {
+                    startAnimation(afterDelay: 0.1)
+                }
             }
             
             // 添加暂停和恢复通知监听
@@ -103,12 +112,15 @@ struct IntervalAnimatedView: View {
                 queue: .main
             ) { notification in
                 if let isWorkMode = notification.userInfo?["isWorkMode"] as? Bool {
-                    self.isInWorkMode = isWorkMode
-                    print("工作模式变更通知接收: \(isWorkMode ? "工作模式" : "休息模式")")
-                    
-                    // 如果闪电动画不再显示，立即停止相关音效
-                    if animationKey == "effect.lightning" && !isWorkMode {
-                        AudioManager.shared.stopAllShopSounds()
+                    // 使用DispatchQueue.main.async来避免在视图更新期间修改状态
+                    DispatchQueue.main.async {
+                        self.isInWorkMode = isWorkMode
+                        print("工作模式变更通知接收: \(isWorkMode ? "工作模式" : "休息模式")")
+                        
+                        // 如果闪电动画不再显示，立即停止相关音效
+                        if self.animationKey == "effect.lightning" && !isWorkMode {
+                            AudioManager.shared.stopAllShopSounds()
+                        }
                     }
                 }
             }
@@ -120,12 +132,15 @@ struct IntervalAnimatedView: View {
                 queue: .main
             ) { notification in
                 if let isDisabled = notification.userInfo?["isDisabled"] as? Bool {
-                    self.isLightningEffectsDisabled = isDisabled
-                    print("闪电音效\(isDisabled ? "已禁用" : "已启用") (通过特殊通知)")
-                    
-                    // 如果禁用闪电音效，立即停止相关音效
-                    if isDisabled && animationKey == "effect.lightning" {
-                        AudioManager.shared.stopSound("shop_thunder")
+                    // 使用DispatchQueue.main.async来避免在视图更新期间修改状态
+                    DispatchQueue.main.async {
+                        self.isLightningEffectsDisabled = isDisabled
+                        print("闪电音效\(isDisabled ? "已禁用" : "已启用") (通过特殊通知)")
+                        
+                        // 如果禁用闪电音效，立即停止相关音效
+                        if isDisabled && self.animationKey == "effect.lightning" {
+                            AudioManager.shared.stopSound("shop_thunder")
+                        }
                     }
                 }
             }

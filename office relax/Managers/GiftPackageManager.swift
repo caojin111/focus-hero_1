@@ -359,10 +359,10 @@ extension GiftPackageManager: SKPaymentTransactionObserver {
     }
     
     func paymentQueueRestoreCompletedTransactionsFinished(_ queue: SKPaymentQueue) {
-        print("恢复购买完成")
+        print("Restore success!")
         // 如果没有恢复任何购买，返回相应信息
         if queue.transactions.isEmpty {
-            handlePurchaseResult(success: false, message: "没有找到可恢复的购买")
+            handlePurchaseResult(success: false, message: "No purchase to restore!")
         }
     }
 } 
