@@ -20,6 +20,9 @@ struct SettingsView: View {
     @State private var workDuration: Double = 0
     @State private var relaxDuration: Double = 0
     
+    // 隐私政策显示状态
+    @State private var showPrivacyPolicy = false
+    
     var body: some View {
         NavigationView {
             Form {
@@ -96,6 +99,24 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("About")) {
+                    // Support us按钮 - 新增在最上方
+                    Button(action: {
+                        // 关闭设置页面
+                        presentationMode.wrappedValue.dismiss()
+                        // 发送通知打开礼包界面
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("OpenGiftPackage"),
+                            object: nil
+                        )
+                    }) {
+                        HStack {
+                            Text("Support us")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    
                     HStack {
                         Text("Version")
                         Spacer()
@@ -108,6 +129,18 @@ struct SettingsView: View {
                         Spacer()
                         Text("LazyCat")
                             .foregroundColor(.gray)
+                    }
+                    
+                    // 隐私政策按钮
+                    Button(action: {
+                        showPrivacyPolicy = true
+                    }) {
+                        HStack {
+                            Text("Privacy Policy")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
             }
@@ -131,6 +164,9 @@ struct SettingsView: View {
                 // 加载初始值
                 workDuration = Double(userDataManager.getWorkDuration())
                 relaxDuration = Double(userDataManager.getRelaxDuration())
+            }
+            .sheet(isPresented: $showPrivacyPolicy) {
+                PrivacyView()
             }
         }
     }

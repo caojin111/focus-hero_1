@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import Network
 import StoreKit
 import FirebaseCore
@@ -85,6 +86,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ = GiftPackageManager.shared
         
         return true
+    }
+    
+    // 限制应用程序的界面方向
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        // 只支持竖屏
+        return .portrait
     }
     
     private func testNetworkConnection(urlString: String) {

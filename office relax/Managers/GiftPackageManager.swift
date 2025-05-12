@@ -45,23 +45,6 @@ class GiftPackageManager: NSObject, ObservableObject {
         isProductRequestInProgress = true
         isLoading = true
         
-        #if DEBUG
-        // 在DEBUG模式下，如果是模拟器，使用模拟的产品数据
-        #if targetEnvironment(simulator)
-        print("在模拟器上使用模拟的产品数据")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self = self else { return }
-            
-            // 创建模拟产品
-            self.createMockProduct()
-            
-            self.isProductRequestInProgress = false
-            self.isLoading = false
-        }
-        return
-        #endif
-        #endif
-        
         let productIDs = Set([starterPackage.id])
         productRequest = SKProductsRequest(productIdentifiers: productIDs)
         productRequest?.delegate = self
@@ -70,70 +53,23 @@ class GiftPackageManager: NSObject, ObservableObject {
         print("开始请求商店产品信息: \(productIDs)")
     }
     
-    #if DEBUG
-    // 创建模拟的产品数据（仅用于开发和测试）
-    private func createMockProduct() {
-        // 模拟产品类无法直接创建，使用通知发布产品已加载
-        print("创建模拟产品数据")
-        
-        // 使用通知在UI层模拟产品加载成功
-        NotificationCenter.default.post(
-            name: NSNotification.Name("MockProductsLoaded"),
-            object: nil,
-            userInfo: [
-                "productId": starterPackage.id,
-                "price": starterPackage.price,
-                "priceString": starterPackage.priceString
-            ]
-        )
-    }
-    
-    // 模拟购买流程（仅用于开发和测试）
-    private func simulatePurchase(completion: @escaping (Bool, String) -> Void) {
-        print("模拟购买流程")
-        isLoading = true
-        
-        // 延迟1.5秒模拟网络请求
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            guard let self = self else { return }
-            
-            // 模拟成功购买
-            let success = true
-            let message = success ? "Purchase success！" : "Purchase failed, please try it later."
-            
-            if success {
-                // 添加礼包内容到用户库存
-                self.addItemsToUserInventory()
-                
-                // 发送购买成功通知
-                NotificationCenter.default.post(name: Self.giftPackagePurchasedNotification, object: nil)
-            }
-            
-            self.isLoading = false
-            self.purchaseResult = (success, message)
-            completion(success, message)
-        }
-    }
-    #endif
-    
     // 获取礼包对应的SKProduct
     func getProduct(for packageID: String) -> SKProduct? {
         return products.first(where: { $0.productIdentifier == packageID })
+    }
+    
+    // 格式化价格
+    func formattedPrice(for product: SKProduct) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = product.priceLocale
+        return formatter.string(from: product.price) ?? "\(product.price)"
     }
     
     // 处理购买请求
     func purchaseGiftPackage(completion: @escaping (Bool, String) -> Void) {
         isLoading = true
         purchaseCompletion = completion
-        
-        #if DEBUG
-        // 在DEBUG模式下，如果是模拟器，使用模拟的购买流程
-        #if targetEnvironment(simulator)
-        print("在模拟器上使用模拟的购买流程")
-        simulatePurchase(completion: completion)
-        return
-        #endif
-        #endif
         
         // 确保用户可以进行支付
         guard SKPaymentQueue.canMakePayments() else {
@@ -236,29 +172,6 @@ class GiftPackageManager: NSObject, ObservableObject {
         isLoading = true
         purchaseCompletion = completion
         
-        #if DEBUG
-        // 在DEBUG模式下，如果是模拟器，使用模拟的恢复购买流程
-        #if targetEnvironment(simulator)
-        print("在模拟器上使用模拟的恢复购买流程")
-        // 延迟1秒模拟网络请求
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            
-            // 模拟恢复购买结果
-            let hasRestored = false // 修改为true可模拟成功恢复
-            
-            if hasRestored {
-                // 添加礼包内容到用户库存
-                self.addItemsToUserInventory()
-                self.handlePurchaseResult(success: true, message: "购买已恢复！")
-            } else {
-                self.handlePurchaseResult(success: false, message: "没有找到可恢复的购买")
-            }
-        }
-        return
-        #endif
-        #endif
-        
         print("开始恢复购买")
         SKPaymentQueue.default().restoreCompletedTransactions()
     }
@@ -271,9 +184,26 @@ class GiftPackageManager: NSObject, ObservableObject {
     
     // 验证购买收据
     private func verifyPurchase(transaction: SKPaymentTransaction) -> Bool {
-        // 在实际应用中，您应该实现服务器端验证
-        // 这里简化为只检查产品ID是否匹配
-        return transaction.payment.productIdentifier == starterPackage.id
+        // 检查收据是否有效
+        guard let appStoreReceiptURL = Bundle.main.appStoreReceiptURL,
+              FileManager.default.fileExists(atPath: appStoreReceiptURL.path) else {
+            print("收据文件不存在")
+            return false
+        }
+        
+        do {
+            // 读取收据数据
+            let receiptData = try Data(contentsOf: appStoreReceiptURL, options: .alwaysMapped)
+            let receiptString = receiptData.base64EncodedString(options: [])
+            
+            // 在实际应用中，您应该将收据发送到您的服务器进行验证
+            // 这里简化为只检查产品ID是否匹配
+            print("收据验证 - 产品ID: \(transaction.payment.productIdentifier)")
+            return transaction.payment.productIdentifier == starterPackage.id
+        } catch {
+            print("读取收据数据失败: \(error.localizedDescription)")
+            return false
+        }
     }
 }
 
@@ -295,8 +225,17 @@ extension GiftPackageManager: SKProductsRequestDelegate {
             
             // 打印产品信息便于调试
             for product in self.products {
-                print("产品: \(product.productIdentifier), 标题: \(product.localizedTitle), 价格: \(product.price)")
+                let formattedPrice = self.formattedPrice(for: product)
+                print("产品: \(product.productIdentifier), 标题: \(product.localizedTitle), 价格: \(formattedPrice)")
             }
+            
+            // 更新礼包价格显示（使用实际价格而非硬编码）
+            if let product = self.products.first(where: { $0.productIdentifier == self.starterPackage.id }) {
+                self.starterPackage.priceString = self.formattedPrice(for: product)
+            }
+            
+            // 发送产品加载成功通知
+            NotificationCenter.default.post(name: NSNotification.Name("ProductsLoaded"), object: nil)
         }
     }
     
@@ -332,8 +271,8 @@ extension GiftPackageManager: SKPaymentTransactionObserver {
                 
             case .failed:
                 let errorMessage = transaction.error?.localizedDescription ?? "未知错误"
-                print("购买失败: \(errorMessage)")
-                handlePurchaseResult(success: false, message: "购买失败: \(errorMessage)")
+                print("\(errorMessage)")
+                handlePurchaseResult(success: false, message: "\(errorMessage)")
                 finishTransaction(transaction)
                 
             case .restored:
@@ -345,6 +284,7 @@ extension GiftPackageManager: SKPaymentTransactionObserver {
                 
             case .deferred:
                 print("购买延期: \(transaction.payment.productIdentifier)")
+                handlePurchaseResult(success: false, message: "购买已延期，请等待审核")
                 
             @unknown default:
                 print("未知的交易状态")
@@ -354,15 +294,19 @@ extension GiftPackageManager: SKPaymentTransactionObserver {
     }
     
     func paymentQueue(_ queue: SKPaymentQueue, restoreCompletedTransactionsFailedWithError error: Error) {
-        print("恢复购买失败: \(error.localizedDescription)")
-        handlePurchaseResult(success: false, message: "恢复购买失败: \(error.localizedDescription)")
+        print("\(error.localizedDescription)")
+        handlePurchaseResult(success: false, message: "\(error.localizedDescription)")
     }
     
     func paymentQueueRestoreCompletedTransactionsFinished(_ queue: SKPaymentQueue) {
-        print("Restore success!")
+        print("恢复购买流程已完成")
+        
         // 如果没有恢复任何购买，返回相应信息
         if queue.transactions.isEmpty {
-            handlePurchaseResult(success: false, message: "No purchase to restore!")
+            handlePurchaseResult(success: false, message: "没有找到可恢复的购买")
+        } else {
+            // 恢复购买成功的处理已在updatedTransactions方法中完成
+            print("已恢复 \(queue.transactions.count) 个购买")
         }
     }
 } 

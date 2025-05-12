@@ -45,6 +45,12 @@ struct OnboardingView: View {
     @State private var subtitle3Scale = 0.8
     @State private var controlsOpacity3 = 0.0
     
+    // 环境对象
+    @Environment(\.presentationMode) var presentationMode
+    
+    // 输入框焦点状态
+    @FocusState private var isHeroNameFocused: Bool
+    
     var body: some View {
         ZStack {
             // 背景图放在最底层，覆盖整个屏幕
@@ -490,88 +496,102 @@ struct OnboardingView: View {
     
     // 英雄名称问题视图
     var heroNameQuestionView: some View {
-        VStack(spacing: 30) {
-            Spacer(minLength: 60)
-            
-            // 标题
-            Image("Splash_text_2")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: 250, maxHeight: 80)
-                .opacity(titleOpacity2)
-                .scaleEffect(titleScale2)
-                .padding(.bottom, 20)
-                .offset(y: -30)
-            
-            // 英雄名称输入区域
-            VStack(alignment: .leading, spacing: 15) {
-                Text("Enter your hero's name")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.white)
-                
-                TextField("", text: $heroName)
-                    .font(.system(size: 20))
-                    .padding()
-                    .background(Color.white.opacity(0.2))
-                    .cornerRadius(15)
-                    .foregroundColor(.white)
-                    .accentColor(.white) // 光标颜色
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15)
-                            .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                    )
-                    .placeholder(when: heroName.isEmpty) {
-                        Text("e.g.: Lazy Cat")
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.leading, 16)
-                    }
+        ZStack {
+            // 固定背景层
+            VStack {
+                Spacer()
             }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.black.opacity(0.5))
-                    .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
-            )
-            .opacity(controlsOpacity2)
-            .padding(.horizontal)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            Spacer()
-            
-            // 完成按钮
-            Button(action: {
-                if !heroName.isEmpty {
-                    // 保存用户数据
-                    userDataManager.updateUserSettings(
-                        focusTime: Int(focusTime),
-                        breakTime: Int(breakTime),
-                        heroName: heroName
-                    )
+            // 主内容层 - 不使用Spacer，而是使用固定位置
+            ScrollView {
+                VStack(spacing: 30) {
+                    // 固定顶部间距
+                    Color.clear.frame(height: 60)
                     
-                    // 显示完成界面
-                    withAnimation {
-                        showCompletionScreen = true
+                    // 标题 - 固定位置
+                    Image("Splash_text_2")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 250, maxHeight: 80)
+                        .opacity(titleOpacity2)
+                        .scaleEffect(titleScale2)
+                        .padding(.bottom, 20)
+                    
+                    // 英雄名称输入区域 - 固定位置
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Enter your hero's name")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        TextField("", text: $heroName)
+                            .font(.system(size: 20))
+                            .padding()
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(15)
+                            .foregroundColor(.white)
+                            .accentColor(.white)
+                            .focused($isHeroNameFocused)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                            )
+                            .placeholder(when: heroName.isEmpty) {
+                                Text("e.g.: Lazy Cat")
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .padding(.leading, 16)
+                            }
+                            .submitLabel(.done)
+                            .onSubmit {
+                                submitHeroName()
+                            }
                     }
-                }
-            }) {
-                Text("Complete Setup")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(20)
                     .background(
-                        LinearGradient(gradient: Gradient(colors: heroName.isEmpty ? 
-                                                         [Color.gray.opacity(0.5), Color.gray.opacity(0.5)] : 
-                                                         [Color.blue.opacity(0.8), Color.purple.opacity(0.8)]), 
-                                      startPoint: .leading, 
-                                      endPoint: .trailing)
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.black.opacity(0.5))
+                            .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
                     )
-                    .cornerRadius(15)
-                    .shadow(color: Color.black.opacity(heroName.isEmpty ? 0 : 0.2), radius: 5, x: 0, y: 3)
+                    .opacity(controlsOpacity2)
+                    .padding(.horizontal)
+                    
+                    // 填充空间 - 固定高度
+                    Spacer(minLength: 100)
+                    
+                    // 完成按钮 - 固定位置
+                    Button(action: {
+                        submitHeroName()
+                    }) {
+                        Text("Complete Setup")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                LinearGradient(gradient: Gradient(colors: heroName.isEmpty ? 
+                                                                 [Color.gray.opacity(0.5), Color.gray.opacity(0.5)] : 
+                                                                 [Color.blue.opacity(0.8), Color.purple.opacity(0.8)]), 
+                                              startPoint: .leading, 
+                                              endPoint: .trailing)
+                            )
+                            .cornerRadius(15)
+                            .shadow(color: Color.black.opacity(heroName.isEmpty ? 0 : 0.2), radius: 5, x: 0, y: 3)
+                    }
+                    .disabled(heroName.isEmpty)
+                    .opacity(controlsOpacity2)
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 40)
+                    
+                    // 额外底部间距，防止键盘遮挡
+                    Color.clear.frame(height: 20)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .disabled(heroName.isEmpty)
-            .opacity(controlsOpacity2)
-            .padding(.horizontal, 30)
-            .padding(.bottom, 40)
+            .scrollDismissesKeyboard(.immediately)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isHeroNameFocused = false
         }
         .onAppear {
             // 重置动画状态以便重新播放
@@ -589,6 +609,24 @@ struct OnboardingView: View {
             withAnimation(.easeOut(duration: 0.8).delay(0.8)) {
                 controlsOpacity2 = 1.0
             }
+        }
+    }
+    
+    // 提取提交英雄名称的逻辑到单独的方法
+    private func submitHeroName() {
+        if !heroName.isEmpty {
+            // 隐藏键盘
+            isHeroNameFocused = false
+            
+            // 不使用延迟，直接进行状态更新
+            userDataManager.updateUserSettings(
+                focusTime: Int(focusTime),
+                breakTime: Int(breakTime),
+                heroName: heroName
+            )
+            
+            // 直接切换到完成界面，不使用动画
+            showCompletionScreen = true
         }
     }
 }

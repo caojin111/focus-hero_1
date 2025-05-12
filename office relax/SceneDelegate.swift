@@ -5,9 +5,37 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let _ = (scene as? UIWindowScene) else { return }
+        guard let windowScene = (scene as? UIWindowScene) else { return }
         
-        print("应用启动: 场景初始化")
+        // 设置只支持竖屏方向 - 使用多种方法确保强制竖屏
+        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+        
+        // 设置方向掩码，仅允许竖屏
+        let orientationMask: UIInterfaceOrientationMask = .portrait
+        UIViewController.attemptRotationToDeviceOrientation()
+        
+        // 创建并应用旋转设置
+        if let rootViewController = windowScene.windows.first?.rootViewController {
+            // 设置方向掩码
+            rootViewController.setOverrideTraitCollection(
+                UITraitCollection(traitsFrom: [
+                    rootViewController.traitCollection,
+                    UITraitCollection(verticalSizeClass: .regular),
+                    UITraitCollection(horizontalSizeClass: .compact)
+                ]),
+                forChild: rootViewController
+            )
+            
+            // 更新支持的方向
+            rootViewController.setNeedsUpdateOfSupportedInterfaceOrientations()
+        }
+        
+        // 将相同的限制应用到所有窗口
+        for window in windowScene.windows {
+            window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+        }
+        
+        print("应用启动: 场景初始化，已设置强制竖屏")
         
         // 初始化必要的管理器
         _ = UserDataManager.shared

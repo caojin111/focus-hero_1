@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct GiftPackageView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -13,6 +14,9 @@ struct GiftPackageView: View {
     @State private var isAnimating = false
     @State private var errorMessage = ""
     @State private var showErrorAlert = false
+    
+    // 保存格式化的价格
+    @State private var displayPrice: String = ""
     
     var body: some View {
         ZStack {
@@ -38,34 +42,49 @@ struct GiftPackageView: View {
                 
                 Spacer()
                 
-                // 包含内容 - 向上移动80像素，向右移动100像素
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Contained:")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.bottom, 5)
-                    
-                    // 礼包内容列表
-                    ForEach(giftManager.starterPackage.includedItems, id: \.self) { itemId in
-                        if let item = shopManager.shopItems.first(where: { $0.id == itemId }) {
-                            HStack {
-                                Circle()
-                                    .fill(Color.green)
-                                    .frame(width: 6, height: 6)
-                                
-                                Text(item.name)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
+                // 使用ZStack包装两个独立控制的部分
+                ZStack {
+                    // 包含内容部分
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Contained:")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.bottom, 5)
+                        
+                        // 礼包内容列表
+                        ForEach(giftManager.starterPackage.includedItems, id: \.self) { itemId in
+                            if let item = shopManager.shopItems.first(where: { $0.id == itemId }) {
+                                HStack {
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 6, height: 6)
+                                    
+                                    Text(item.name)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                }
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
+                    .offset(x: 30, y: -110) // 商品列表的偏移量：向右100像素，向上80像素
+                    
+                    // 添加商品描述文本 - 独立控制偏移
+                    Text("equip them to make your focus scene more lovely!")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(red: 1.0, green: 0.8, blue: 0.0)) // 亮黄色，更醒目
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.3))
+                        .cornerRadius(8)
+                        .padding(.bottom, 10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .offset(x: 40, y: -40) // 描述文本的偏移量：向右20像素，向上40像素
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
-                .offset(x: 100, y: -80) // 添加向右100像素，向上80像素的偏移
                 
                 // 价格和购买按钮 - 向上移动60像素
                 VStack(spacing: 15) {
@@ -74,8 +93,8 @@ struct GiftPackageView: View {
                     
                     Button(action: {
                         if !isPackagePurchased {
-                        audioManager.playSound("click")
-                        showConfirmation = true
+                            audioManager.playSound("click")
+                            showConfirmation = true
                         }
                     }) {
                         HStack {
@@ -83,8 +102,9 @@ struct GiftPackageView: View {
                                 .font(.system(size: 16, weight: .bold))
                             
                             if !isPackagePurchased {
-                            Text(giftManager.starterPackage.priceString)
-                                .font(.system(size: 16, weight: .bold))
+                                // 使用StoreKit获取的价格或默认价格
+                                Text(displayPrice.isEmpty ? giftManager.starterPackage.priceString : displayPrice)
+                                    .font(.system(size: 16, weight: .bold))
                             }
                         }
                         .foregroundColor(.white)
@@ -114,15 +134,15 @@ struct GiftPackageView: View {
                     
                     // 恢复购买按钮
                     if !isPackagePurchased {
-                    Button(action: {
-                        audioManager.playSound("click")
+                        Button(action: {
+                            audioManager.playSound("click")
                             restorePackage()
-                    }) {
-                        Text("Restore")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    .disabled(giftManager.isLoading)
+                        }) {
+                            Text("Restore")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        .disabled(giftManager.isLoading)
                     }
                 }
                 .padding(.bottom, 30)
@@ -157,15 +177,38 @@ struct GiftPackageView: View {
             if showRestoreFailedAlert {
                 restoreFailedAlert
             }
+            
+            // 错误提示
+            if showErrorAlert {
+                errorDialog
+            }
         }
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         .onAppear {
             // 开始动画
             isAnimating = true
+            
+            // 从StoreKit更新价格显示
+            updatePriceDisplay()
+            
+            // 添加通知监听，产品信息更新时刷新显示价格
+            NotificationCenter.default.addObserver(forName: NSNotification.Name("ProductsLoaded"), object: nil, queue: .main) { _ in
+                self.updatePriceDisplay()
+            }
         }
         .onDisappear {
             // 停止动画
             isAnimating = false
+            
+            // 移除通知监听
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("ProductsLoaded"), object: nil)
+        }
+    }
+    
+    // 更新价格显示
+    private func updatePriceDisplay() {
+        if let product = giftManager.getProduct(for: giftManager.starterPackage.id) {
+            displayPrice = giftManager.formattedPrice(for: product)
         }
     }
     
@@ -187,6 +230,13 @@ struct GiftPackageView: View {
                     .font(.system(size: 18))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
+                
+                if !displayPrice.isEmpty {
+                    Text("Price: \(displayPrice)")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 5)
+                }
                 
                 HStack(spacing: 20) {
                     Button(action: {
@@ -248,7 +298,6 @@ struct GiftPackageView: View {
                 Text("Items in package are now in your item list.")
                     .font(.system(size: 16))
                     .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
                 
                 Button(action: {
                     audioManager.playSound("click")
@@ -258,7 +307,7 @@ struct GiftPackageView: View {
                     Text("OK")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 50)
+                        .padding(.horizontal, 40)
                         .padding(.vertical, 10)
                         .background(Color.blue.opacity(0.7))
                         .cornerRadius(10)
@@ -283,9 +332,9 @@ struct GiftPackageView: View {
             VStack(spacing: 20) {
                 Image(systemName: "exclamationmark.circle.fill")
                     .font(.system(size: 60))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.yellow)
                 
-                Text("Tips")
+                Text("Restore failed")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 
@@ -298,10 +347,10 @@ struct GiftPackageView: View {
                     audioManager.playSound("click")
                     showRestoreFailedAlert = false
                 }) {
-                    Text("Yes")
+                    Text("OK")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 50)
+                        .padding(.horizontal, 40)
                         .padding(.vertical, 10)
                         .background(Color.blue.opacity(0.7))
                         .cornerRadius(10)
@@ -314,14 +363,55 @@ struct GiftPackageView: View {
         }
     }
     
+    // 错误提示对话框
+    var errorDialog: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    showErrorAlert = false
+                }
+            
+            VStack(spacing: 20) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.red)
+                
+                Text("Error")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Text(errorMessage)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                
+                Button(action: {
+                    audioManager.playSound("click")
+                    showErrorAlert = false
+                }) {
+                    Text("OK")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 40)
+                        .padding(.vertical, 10)
+                        .background(Color.blue.opacity(0.7))
+                        .cornerRadius(10)
+                }
+            }
+            .padding(30)
+            .background(Color(red: 0.1, green: 0.1, blue: 0.3))
+            .cornerRadius(20)
+            .shadow(radius: 10)
+        }
+    }
+    
+    // 购买礼包
     private func purchasePackage() {
         giftManager.purchaseGiftPackage { success, message in
             if success {
                 print("Purchase success")
                 showSuccessAlert = true
-                
-                // 验证并修复礼包物品状态
-                ShopManager.shared.verifyAndFixGiftPackageItems()
             } else {
                 print("Purchase failed: \(message)")
                 errorMessage = message
@@ -330,28 +420,24 @@ struct GiftPackageView: View {
         }
     }
     
+    // 恢复购买
     private func restorePackage() {
         giftManager.restorePurchases { success, message in
             if success {
-                print("Restore success")
                 showSuccessAlert = true
-                
-                // 验证并修复礼包物品状态
-                ShopManager.shared.verifyAndFixGiftPackageItems()
             } else {
-                print("Restore failed: \(message)")
                 restoreFailedMessage = message
                 showRestoreFailedAlert = true
             }
         }
     }
     
-    // 判断礼包是否已购买
+    // 检查礼包是否已购买
     private func isPackagePurchased() -> Bool {
-        // 检查礼包中的任一物品是否已购买
-        let packageItems = giftManager.starterPackage.includedItems
+        // 检查礼包中的任何物品是否已购买
+        let shopManager = ShopManager.shared
         return shopManager.purchasedItems.contains { item in
-            packageItems.contains(item.id)
+            giftManager.starterPackage.includedItems.contains(item.id)
         }
     }
 }

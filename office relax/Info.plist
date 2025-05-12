@@ -15,15 +15,36 @@
 		</array>
 	</dict>
 </dict>
+
+<key>UISupportedInterfaceOrientations</key>
+<array>
+	<string>UIInterfaceOrientationPortrait</string>
+</array>
+
 <key>UIAppFonts</key>
 <array>
 	<string>fibberish.ttf</string>
 </array>
+
 <key>NSAppTransportSecurity</key>
 <dict>
-	<key>NSAllowsArbitraryLoads</key>
-	<true/>
+	<key>NSExceptionDomains</key>
+	<dict>
+		<key>lazygeng.com</key>
+		<dict>
+			<key>NSExceptionAllowsInsecureHTTPLoads</key>
+			<true/>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+		</dict>
+	</dict>
 </dict>
+
+<key>NSCrashReportDurationWakeUpTime</key>
+<string>此应用程序收集崩溃报告，以提高应用程序的稳定性</string>
+
+<key>NSUserTrackingUsageDescription</key>
+<string>我们希望能跟踪您在应用中的活动，以提供更个性化的体验并改进我们的服务</string>
 
 <key>StoreKit</key>
 <dict>

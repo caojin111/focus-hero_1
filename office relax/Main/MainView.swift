@@ -327,13 +327,14 @@ struct MainView: View {
                             Image("coin")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 20, height: 20)
+                                .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 20), height: DeviceHelper.shared.adjustedSize(baseSize: 20))
                             Text("\(userDataManager.userProfile.coins)")
                                 .foregroundColor(.black)
                                 .fontWeight(.bold)
+                                .adaptiveFont(size: 16)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
+                        .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 10))
+                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
                         .background(Color.white.opacity(0.8))
                         .cornerRadius(15)
                         
@@ -341,10 +342,10 @@ struct MainView: View {
                         
                         // 计时器显示 - 添加偏移和缩放控制
                         Text(formatTime(seconds: remainingSeconds))
-                            .font(.system(size: 24, weight: .bold))
+                            .adaptiveFont(size: 24, weight: .bold)
                             .foregroundColor(.white)
-                            .padding(.vertical, 5)
-                            .padding(.horizontal, 12)
+                            .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
+                            .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 12))
                             .background(Color.black.opacity(0.5))
                             .cornerRadius(10)
                             .offset(x: timerOffsetX, y: timerOffsetY)
@@ -360,13 +361,13 @@ struct MainView: View {
                             Image("settings")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 40, height: 40)
+                                .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 40), height: DeviceHelper.shared.adjustedSize(baseSize: 40))
                                 .foregroundColor(.white)
                         }
                         
                     }
-                    .padding(.top, 50)  // 增加顶部间距，避开状态栏
-                    .padding(.horizontal)
+                    .adaptiveTopSafeArea() // 使用新增的自适应方法
+                    .padding(.horizontal, DeviceHelper.shared.contentPadding)
                     
                     // 顶部右侧的礼包按钮 - 只在休息模式下显示
                     if !isWorkMode {
@@ -379,27 +380,27 @@ struct MainView: View {
                                 Image("gift")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 40, height: 40)
+                                    .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 40), height: DeviceHelper.shared.adjustedSize(baseSize: 40))
                                     .foregroundColor(.white)
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.top, 20) // 向下移动20像素
+                        .padding(.horizontal, DeviceHelper.shared.contentPadding)
+                        .padding(.top, DeviceHelper.shared.adjustedSize(baseSize: 20)) // 向下移动20像素
                     }
                     
                     // 状态和奖励显示 - 移到上方
-                    HStack(spacing: 20) {
+                    HStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 20)) {
                         // 状态文本
                         Text(isWorkMode ? "Hero is focusing..." : "Enjoy your rest time...")
                             .foregroundColor(.white)
-                            .font(.subheadline)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 4)
+                            .adaptiveFont(size: 14)
+                            .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 12))
+                            .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 4))
                             .background(
                                 Image("banner")
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(height: 30)
+                                    .frame(height: DeviceHelper.shared.adjustedSize(baseSize: 30))
                             )
                             .cornerRadius(6)
                             .offset(x: isWorkMode ? 0 : 8, y: isWorkMode ? 0 : -30) // 休息模式下向右8像素，向上30像素
@@ -409,36 +410,36 @@ struct MainView: View {
                             HStack {
                                 Text("You will get:")
                                     .foregroundColor(.black)
-                                    .font(.subheadline)
+                                    .adaptiveFont(size: 14)
                                 Image("coin")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 16, height: 16)
+                                    .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 16), height: DeviceHelper.shared.adjustedSize(baseSize: 16))
                                 Text("\(previewCoinsReward())")
                                     .foregroundColor(.black)
-                                    .fontWeight(.bold)
+                                    .adaptiveFont(size: 14, weight: .bold)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 12))
+                            .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 4))
                             .background(Color.white.opacity(0.8))
                             .cornerRadius(6)
                         }
                     }
-                    .padding(.top, 10)
+                    .padding(.top, DeviceHelper.shared.adjustedSize(baseSize: 10))
                     
-                    // 增加空间推动英雄到中央位置
+                    // 增加空间推动英雄到中央位置，为iPad Pro提供更多空间
                     Spacer(minLength: 100)
                     
-                    // 英雄动画 - 增大尺寸
+                    // 英雄动画 - 根据设备类型调整大小
                     heroView
-                        .frame(height: 280)  // 增加英雄区域高度
+                        .frame(height: 280)  // 使用固定高度
                     
-                    // 增加空间推动底部按钮
-                    Spacer(minLength: 40)  // 减少底部间距，补偿增大的英雄区域
+                    // 增加空间推动底部按钮，为iPad Pro提供更多空间
+                    Spacer(minLength: 40)
                     
                     // 底部按钮区域
                     bottomButtons
-                        .padding(.bottom, 40)
+                        .adaptiveBottomSafeArea() // 使用新增的自适应方法
                 }
             }
             
@@ -457,20 +458,21 @@ struct MainView: View {
                         resumeAll() // 点击空白处恢复
                     }
                 
-                VStack(spacing: 20) {
+                VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 20)) {
                     Text("What do you want to do?")
-                        .font(.headline)
+                        .adaptiveFont(size: 18, weight: .semibold)
                         .foregroundColor(.white)
                     
-                    HStack(spacing: 20) {
+                    HStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 20)) {
                         Button(action: {
                             showPauseDialog = false
                             resumeAll() // 点击Back按钮恢复
                         }) {
                             Text("Back")
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 30)
-                                .padding(.vertical, 10)
+                                .adaptiveFont(size: 16)
+                                .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 30))
+                                .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 10))
                                 .background(Color.blue)
                                 .cornerRadius(8)
                         }
@@ -482,22 +484,28 @@ struct MainView: View {
                         }) {
                             Text("Skip")
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 30)
-                                .padding(.vertical, 10)
+                                .adaptiveFont(size: 16)
+                                .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 30))
+                                .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 10))
                                 .background(Color.red)
                                 .cornerRadius(8)
                         }
                     }
                 }
-                .padding(30)
+                .padding(DeviceHelper.shared.adjustedSize(baseSize: 30))
                 .background(Color.black.opacity(0.8))
                 .cornerRadius(15)
                 .transition(.scale)
+                .adaptiveMaxWidth() // 确保使用我们改进的adaptiveMaxWidth方法
+                .frame(width: 300) // 使用固定宽度
             }
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onAppear {
             print("MainView 出现")
+            
+            // 打印设备信息，帮助调试适配问题
+            DeviceHelper.shared.printDeviceInfo()
             
             // 验证礼包商品状态
             ShopManager.shared.verifyAndFixGiftPackageItems()
@@ -1290,7 +1298,7 @@ struct MainView: View {
     }
     
     var bottomButtons: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 10)) {
             // 暂停按钮（原Skip按钮）
             Button(action: { 
                 showPauseDialog = true 
@@ -1299,10 +1307,11 @@ struct MainView: View {
                 HStack {
                     Image(systemName: "pause.fill")
                     Text("Pause")
+                        .adaptiveFont(size: 16)
                 }
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 12))
                 .background(Color.white.opacity(0.8))
                 .cornerRadius(10)
             }
@@ -1310,21 +1319,21 @@ struct MainView: View {
             
             // 工作/休息模式下不同的按钮
             if !isWorkMode {
-                HStack(spacing: 10) {
+                HStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 10)) {
                     // 邮件按钮
                     Button(action: { 
                         sendEmail()
                     }) {
-                        VStack(spacing: 3) {
+                        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 3)) {
                             Image("mail")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 30, height: 30)
+                                .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 30), height: DeviceHelper.shared.adjustedSize(baseSize: 30))
                             Text("Contact us")
-                                .font(.system(size: 15))
+                                .adaptiveFont(size: 15)
                         }
                         .foregroundColor(.black)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 12))
                         .frame(maxWidth: .infinity)
                         .background(Color.white.opacity(0.8))
                         .cornerRadius(8)
@@ -1332,16 +1341,16 @@ struct MainView: View {
                     
                     // 商店按钮
                     Button(action: { showShop = true }) {
-                        VStack(spacing: 3) {
+                        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 3)) {
                             Image("shop")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 30, height: 30)
+                                .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 30), height: DeviceHelper.shared.adjustedSize(baseSize: 30))
                             Text("shop")
-                                .font(.system(size: 15))
+                                .adaptiveFont(size: 15)
                         }
                         .foregroundColor(.black)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 12))
                         .frame(maxWidth: .infinity)
                         .background(Color.white.opacity(0.8))
                         .cornerRadius(8)
@@ -1350,6 +1359,7 @@ struct MainView: View {
                 .padding(.horizontal, 32)
             }
         }
+        .adaptiveMaxWidth() // 使用改进的adaptiveMaxWidth方法
     }
     
     // 发送邮件
@@ -1649,11 +1659,6 @@ struct MainView: View {
     
     // 暂停动画 - 通过更新AnimationManager实现
     private func pauseAnimations() {
-        // 未使用的变量，改为注释
-        // let animationKeys = isWorkMode ? 
-        //     ["hero.attack", "boss.idle"] : 
-        //     ["hero.relax", "fireplace.burn"]
-        
         // 通知每个动画视图暂停
         NotificationCenter.default.post(
             name: NSNotification.Name("PauseAnimations"),
