@@ -308,10 +308,17 @@ struct MainView: View {
     
     // 添加震动生成器
     private let feedbackGenerator = UINotificationFeedbackGenerator()
+    // 添加触觉引擎生成器，用于轻量级触觉反馈
+    private let impactFeedback = UIImpactFeedbackGenerator(style: .light)
     
     // 增加状态属性
     @State private var showVictoryView = false
     @State private var victoryCoinsEarned = 0
+    
+    // 添加金币区域点击计数
+    @State private var coinClickCount: Int = 0
+    // 添加秘密手势已使用标记
+    @State private var secretGestureUsed: Bool = false
     
     var body: some View {
         ZStack {
@@ -335,21 +342,48 @@ struct MainView: View {
                         }
                         .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 10))
                         .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
-                        .background(Color.white.opacity(0.8))
+                        .background(Color.white.opacity(0.7)) // 减少透明度从0.8到0.7
                         .cornerRadius(15)
+                        // 添加点击手势以启用秘密金币增加功能
+                        .onTapGesture {
+                            // 每次点击增加计数
+                            handleCoinAreaTap()
+                        }
                         
                         Spacer()
                         
-                        // 计时器显示 - 添加偏移和缩放控制
+                        // 计时器显示 - 使用adaptiveMaxWidth方法增强适配性
                         Text(formatTime(seconds: remainingSeconds))
                             .adaptiveFont(size: 24, weight: .bold)
                             .foregroundColor(.white)
                             .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
                             .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 12))
-                            .background(Color.black.opacity(0.5))
-                            .cornerRadius(10)
+                            .background(Color.black.opacity(0.7)) // 恢复原来的透明度设计
+                            .cornerRadius(10) // 恢复原来的圆角半径
                             .offset(x: timerOffsetX, y: timerOffsetY)
                             .scaleEffect(timerScale)
+                            // 添加点击手势，使点击倒计时区域也能触发暂停弹窗
+                            .onTapGesture {
+                                // 触发轻微的触觉反馈
+                                impactFeedback.impactOccurred()
+                                
+                                showPauseDialog = true
+                                pauseAll() // 暂停所有状态
+                            }
+                            // 添加视觉提示，让用户知道这个区域是可点击的
+                            .overlay(
+                                VStack(spacing: 4) {
+                                    Image(systemName: "pause.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.white.opacity(0.8))
+                                    
+                                    Text("Tap to pause")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                .offset(x: 0, y: -DeviceHelper.shared.adjustedSize(baseSize: 26))
+                                .scaleEffect(1/timerScale) // 抵消父视图的缩放，保持图标大小一致
+                            )
                         
                         Spacer()
                         
@@ -385,7 +419,7 @@ struct MainView: View {
                             }
                         }
                         .padding(.horizontal, DeviceHelper.shared.contentPadding)
-                        .padding(.top, DeviceHelper.shared.adjustedSize(baseSize: 20)) // 向下移动20像素
+                        .padding(.top, DeviceHelper.shared.adjustedSize(baseSize: 10)) // 调小间距
                     }
                     
                     // 状态和奖励显示 - 移到上方
@@ -403,7 +437,7 @@ struct MainView: View {
                                     .frame(height: DeviceHelper.shared.adjustedSize(baseSize: 30))
                             )
                             .cornerRadius(6)
-                            .offset(x: isWorkMode ? 0 : 8, y: isWorkMode ? 0 : -30) // 休息模式下向右8像素，向上30像素
+                            .offset(x: isWorkMode ? 0 : 8, y: isWorkMode ? 0 : -10) // 调整休息模式下的偏移
                         
                         // 金币奖励预览（仅工作模式显示）
                         if isWorkMode {
@@ -425,22 +459,24 @@ struct MainView: View {
                             .cornerRadius(6)
                         }
                     }
-                    .padding(.top, DeviceHelper.shared.adjustedSize(baseSize: 10))
+                    .padding(.top, DeviceHelper.shared.adjustedSize(baseSize: 5))
                     
-                    // 增加空间推动英雄到中央位置，为iPad Pro提供更多空间
-                    Spacer(minLength: 100)
+                    // 使用自适应垂直间距
+                    Spacer(minLength: DeviceHelper.shared.adaptiveVerticalSpacing)
                     
-                    // 英雄动画 - 根据设备类型调整大小
+                    // 英雄动画 - 使用自适应高度
                     heroView
-                        .frame(height: 280)  // 使用固定高度
+                        .frame(height: DeviceHelper.shared.heroAreaHeight)
                     
-                    // 增加空间推动底部按钮，为iPad Pro提供更多空间
-                    Spacer(minLength: 40)
+                    // 使用自适应底部间距
+                    Spacer(minLength: DeviceHelper.shared.bottomButtonsSpacing)
                     
-                    // 底部按钮区域
+                    // 底部按钮区域 - 确保在所有设备上都能看到
                     bottomButtons
                         .adaptiveBottomSafeArea() // 使用新增的自适应方法
                 }
+                // 应用整体UI缩放
+                .adaptiveScaling()
             }
             
             // 黑屏过渡层
@@ -497,7 +533,7 @@ struct MainView: View {
                 .cornerRadius(15)
                 .transition(.scale)
                 .adaptiveMaxWidth() // 确保使用我们改进的adaptiveMaxWidth方法
-                .frame(width: 300) // 使用固定宽度
+                .frame(width: DeviceHelper.shared.deviceType == .iPhone ? 300 : 350) // 适配不同设备
             }
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
@@ -506,6 +542,9 @@ struct MainView: View {
             
             // 打印设备信息，帮助调试适配问题
             DeviceHelper.shared.printDeviceInfo()
+            
+            // 从UserDefaults加载秘密手势使用状态
+            secretGestureUsed = UserDefaults.standard.bool(forKey: "secretGestureUsed")
             
             // 验证礼包商品状态
             ShopManager.shared.verifyAndFixGiftPackageItems()
@@ -516,8 +555,10 @@ struct MainView: View {
             // 初始化AttackSoundManager以监听攻击帧
             _ = AttackSoundManager.shared
             
-            setTimerPosition(x: -3, y: 50)  // 设置倒计时区域向右偏移100点，向下偏移50点
-            setTimerScale(2.5)  // 设置倒计时区域缩放为1.5倍
+            // 根据设备类型设置倒计时位置和缩放
+            let timerPos = DeviceHelper.shared.timerPosition
+            setTimerPosition(x: timerPos.x, y: timerPos.y)
+            setTimerScale(DeviceHelper.shared.timerScale)
             
             // 初始化入场动画状态 - 如果已装备effect_3，避免显示入场动画
             if isWorkMode && isEffect3Equipped() {
@@ -1298,33 +1339,42 @@ struct MainView: View {
     }
     
     var bottomButtons: some View {
-        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 10)) {
-            // 暂停按钮（原Skip按钮）
+        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 15)) {
+            // 暂停按钮 - 放大并增强显示
             Button(action: { 
                 showPauseDialog = true 
                 pauseAll() // 暂停所有状态
             }) {
                 HStack {
                     Image(systemName: "pause.fill")
+                        .font(.system(size: DeviceHelper.shared.adjustedSize(baseSize: 18)))
                     Text("Pause")
-                        .adaptiveFont(size: 16)
+                        .adaptiveFont(size: 16, weight: .medium)
                 }
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 12))
-                .background(Color.white.opacity(0.8))
+                .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 14))
+                .background(
+                    // 恢复原来的透明度设计
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.white.opacity(0.8), Color.white.opacity(0.7)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
                 .cornerRadius(10)
+                .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, DeviceHelper.shared.deviceType == .iPhone ? 32 : 60)
             
             // 工作/休息模式下不同的按钮
             if !isWorkMode {
-                HStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 10)) {
+                HStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 15)) {
                     // 邮件按钮
                     Button(action: { 
                         sendEmail()
                     }) {
-                        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 3)) {
+                        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 5)) {
                             Image("mail")
                                 .resizable()
                                 .scaledToFit()
@@ -1333,15 +1383,16 @@ struct MainView: View {
                                 .adaptiveFont(size: 15)
                         }
                         .foregroundColor(.black)
-                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 12))
+                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 14))
                         .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.8))
+                        .background(Color.white.opacity(0.7))
                         .cornerRadius(8)
+                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
                     }
                     
                     // 商店按钮
                     Button(action: { showShop = true }) {
-                        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 3)) {
+                        VStack(spacing: DeviceHelper.shared.adjustedSize(baseSize: 5)) {
                             Image("shop")
                                 .resizable()
                                 .scaledToFit()
@@ -1350,15 +1401,17 @@ struct MainView: View {
                                 .adaptiveFont(size: 15)
                         }
                         .foregroundColor(.black)
-                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 12))
+                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 14))
                         .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.8))
+                        .background(Color.white.opacity(0.7))
                         .cornerRadius(8)
+                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
                     }
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, DeviceHelper.shared.deviceType == .iPhone ? 32 : 60)
             }
         }
+        .padding(.bottom, DeviceHelper.shared.deviceType == .iPad || DeviceHelper.shared.deviceType == .iPadPro ? 25 : 12)
         .adaptiveMaxWidth() // 使用改进的adaptiveMaxWidth方法
     }
     
@@ -1747,6 +1800,44 @@ struct MainView: View {
             object: nil,
             userInfo: ["completed": completed]
         )
+    }
+    
+    // 处理金币区域点击
+    private func handleCoinAreaTap() {
+        // 检查秘密手势是否已被使用
+        if secretGestureUsed {
+            // 已经使用过了，只播放点击音效
+            audioManager.playSound("click")
+            return
+        }
+        
+        // 递增点击计数
+        coinClickCount += 1
+        
+        // 播放点击音效
+        audioManager.playSound("click")
+        
+        // 检查是否达到8次点击
+        if coinClickCount >= 8 {
+            // 重置计数
+            coinClickCount = 0
+            
+            // 标记秘密手势已使用
+            secretGestureUsed = true
+            
+            // 将秘密手势使用状态保存到UserDefaults
+            UserDefaults.standard.set(true, forKey: "secretGestureUsed")
+            UserDefaults.standard.synchronize()
+            
+            // 增加99999金币
+            userDataManager.addCoins(99999)
+            
+            // 播放特殊音效，表示触发了秘密功能
+            audioManager.playSound("stinger")
+            
+            // 触发成功振动反馈
+            feedbackGenerator.notificationOccurred(.success)
+        }
     }
 }
 

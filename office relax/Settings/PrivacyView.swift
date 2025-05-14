@@ -28,19 +28,20 @@ struct PrivacyView: View {
 }
 
 struct WebViewContainer: UIViewRepresentable {
-    // 在线隐私政策URL
-    private let privacyPolicyURL = "https://docs.qq.com/doc/DZUxPZkJlR2NVSnNB?electronTabTitle=Privacy+Policy&isOfflineNewFileFlag=true"
+    // 本地隐私政策HTML文件
+    private let privacyPolicyFileName = "privacy_policy.html"
     
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
         webView.backgroundColor = .systemBackground
         
-        // 加载在线隐私政策URL
-        if let url = URL(string: privacyPolicyURL) {
+        // 加载本地HTML文件
+        if let htmlPath = Bundle.main.path(forResource: privacyPolicyFileName, ofType: nil) {
+            let url = URL(fileURLWithPath: htmlPath)
             let request = URLRequest(url: url)
             webView.load(request)
         } else {
-            // 如果URL无效，显示错误信息
+            // 如果文件不存在，显示错误信息
             let errorHTML = """
             <html>
             <head>
@@ -51,16 +52,16 @@ struct WebViewContainer: UIViewRepresentable {
                 </style>
             </head>
             <body>
-                <h1>无法加载隐私政策</h1>
-                <p>抱歉，隐私政策无法加载。请检查您的网络连接或联系应用开发者。</p>
-                <p>邮箱: support@lazygeng.com</p>
+                <h1>Unable to Load Privacy Policy</h1>
+                <p>Sorry, the privacy policy could not be loaded. Please contact the app developer.</p>
+                <p>Email: dxycj250@gmail.com</p>
             </body>
             </html>
             """
             webView.loadHTMLString(errorHTML, baseURL: nil)
             
             // 记录错误，方便调试
-            print("错误：无效的隐私政策URL")
+            print("错误：本地隐私政策文件未找到 - \(privacyPolicyFileName)")
         }
         
         return webView
