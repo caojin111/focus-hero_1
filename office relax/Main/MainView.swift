@@ -273,6 +273,10 @@ struct MainView: View {
     @State private var timer: Timer? = nil
     @State private var initialWorkSeconds: Int = 0
     
+    // 添加后台时间计算相关属性
+    @State private var backgroundTime: Date?
+    @State private var totalBackgroundTime: TimeInterval = 0
+    
     // 英雄动画相关状态
     @State private var isHeroEntryCompleted = false // 跟踪入场动画是否完成
     @State private var entryAnimationTimer: Timer? = nil // 用于计时入场动画结束
@@ -328,38 +332,58 @@ struct MainView: View {
             if contentLoaded {
                 VStack(spacing: 0) {
                     // 顶部信息栏和计时器区域
-                    HStack {
-                        // 金币余额
-                        HStack(spacing: 2) {
-                            Image("coin")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 20), height: DeviceHelper.shared.adjustedSize(baseSize: 20))
-                            Text("\(userDataManager.userProfile.coins)")
-                                .foregroundColor(.black)
-                                .fontWeight(.bold)
-                                .adaptiveFont(size: 16)
+                    ZStack {
+                        // 金币余额 - 放在左侧
+                        HStack {
+                            HStack(spacing: 2) {
+                                Image("coin")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 20), height: DeviceHelper.shared.adjustedSize(baseSize: 20))
+                                Text("\(userDataManager.userProfile.coins)")
+                                    .foregroundColor(.black)
+                                    .fontWeight(.bold)
+                                    .adaptiveFont(size: 16)
+                            }
+                            .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 10))
+                            .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
+                            .background(Color.white.opacity(0.7))
+                            .cornerRadius(15)
+                            // 添加点击手势以启用秘密金币增加功能
+                            .onTapGesture {
+                                // 每次点击增加计数
+                                handleCoinAreaTap()
+                            }
+                            
+                            Spacer()
                         }
-                        .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 10))
-                        .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
-                        .background(Color.white.opacity(0.7)) // 减少透明度从0.8到0.7
-                        .cornerRadius(15)
-                        // 添加点击手势以启用秘密金币增加功能
-                        .onTapGesture {
-                            // 每次点击增加计数
-                            handleCoinAreaTap()
+                        .padding(.horizontal, DeviceHelper.shared.contentPadding)
+                        
+                        // 设置按钮 - 放在右侧
+                        HStack {
+                            Spacer()
+                            
+                            Button(action: {
+                                audioManager.playSound("click")
+                                showSettings = true
+                            }) {
+                                Image("settings")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 40), height: DeviceHelper.shared.adjustedSize(baseSize: 40))
+                                    .foregroundColor(.white)
+                            }
                         }
+                        .padding(.horizontal, DeviceHelper.shared.contentPadding)
                         
-                        Spacer()
-                        
-                        // 计时器显示 - 使用adaptiveMaxWidth方法增强适配性
+                        // 计时器显示 - 完全独立，不受其他元素影响
                         Text(formatTime(seconds: remainingSeconds))
                             .adaptiveFont(size: 24, weight: .bold)
                             .foregroundColor(.white)
                             .padding(.vertical, DeviceHelper.shared.adjustedSize(baseSize: 5))
                             .padding(.horizontal, DeviceHelper.shared.adjustedSize(baseSize: 12))
-                            .background(Color.black.opacity(0.7)) // 恢复原来的透明度设计
-                            .cornerRadius(10) // 恢复原来的圆角半径
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(10)
                             .offset(x: timerOffsetX, y: timerOffsetY)
                             .scaleEffect(timerScale)
                             // 添加点击手势，使点击倒计时区域也能触发暂停弹窗
@@ -370,38 +394,8 @@ struct MainView: View {
                                 showPauseDialog = true
                                 pauseAll() // 暂停所有状态
                             }
-                            // 添加视觉提示，让用户知道这个区域是可点击的
-                            .overlay(
-                                VStack(spacing: 4) {
-                                    Image(systemName: "pause.circle.fill")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(.white.opacity(0.8))
-                                    
-                                    Text("Tap to pause")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                                .offset(x: 0, y: -DeviceHelper.shared.adjustedSize(baseSize: 26))
-                                .scaleEffect(1/timerScale) // 抵消父视图的缩放，保持图标大小一致
-                            )
-                        
-                        Spacer()
-                        
-                        // 设置按钮
-                        Button(action: {
-                            audioManager.playSound("click")
-                            showSettings = true
-                        }) {
-                            Image("settings")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: DeviceHelper.shared.adjustedSize(baseSize: 40), height: DeviceHelper.shared.adjustedSize(baseSize: 40))
-                                .foregroundColor(.white)
-                        }
-                        
                     }
-                    .adaptiveTopSafeArea() // 使用新增的自适应方法
-                    .padding(.horizontal, DeviceHelper.shared.contentPadding)
+                    .adaptiveTopSafeArea()
                     
                     // 顶部右侧的礼包按钮 - 只在休息模式下显示
                     if !isWorkMode {
@@ -764,6 +758,49 @@ struct MainView: View {
                 // 初始状态为显示 StartFocusView
                 showStartFocus = true
             }
+            
+            // 添加应用状态变化观察者
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.willResignActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                // 应用进入后台
+                backgroundTime = Date()
+            }
+            
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                // 应用回到前台
+                if let backgroundTime = backgroundTime {
+                    let timeInBackground = Date().timeIntervalSince(backgroundTime)
+                    totalBackgroundTime += timeInBackground
+                    self.backgroundTime = nil
+                    
+                    // 更新剩余时间
+                    let currentDate = Date()
+                    let totalElapsedTime = currentDate.timeIntervalSince(timerStartDate)
+                    let actualElapsedTime = totalElapsedTime - totalBackgroundTime
+                    
+                    // 计算应该减少的秒数
+                    let secondsToDecrease = Int(actualElapsedTime)
+                    
+                    if remainingSeconds > secondsToDecrease {
+                        remainingSeconds -= secondsToDecrease
+                    } else {
+                        remainingSeconds = 0
+                        timerCompleted()
+                    }
+                    
+                    // 更新Boss血条进度
+                    if isWorkMode {
+                        updateBossHealthProgress()
+                    }
+                }
+            }
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onDisappear {
@@ -782,6 +819,10 @@ struct MainView: View {
             
             // 通知AttackSoundManager已离开MainView
             notifyViewState(viewName: "OtherView")
+            
+            // 移除通知观察者
+            NotificationCenter.default.removeObserver(self, name: UIApplication.willResignActiveNotification, object: nil)
+            NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
@@ -1446,6 +1487,7 @@ struct MainView: View {
         // 记录计时器开始时间
         timerStartDate = Date()
         lastTickDate = timerStartDate
+        totalBackgroundTime = 0
         
         // 创建新计时器
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
@@ -1463,35 +1505,38 @@ struct MainView: View {
                 // 时间可能被修改，记录异常
                 print("Time manipulation detected: \(timeDifference) seconds")
                 
-                // 可选：重置计时器或采取其他措施
-                // self.resetTimer()
-                
                 // 最保守的做法：减去实际时间
-                if remainingSeconds > 0 {
+                if self.remainingSeconds > 0 {
                     let decrementAmount = max(1, min(Int(timeDifference), 5))
-                    remainingSeconds -= decrementAmount
+                    self.remainingSeconds -= decrementAmount
                 } else {
-                    timerCompleted()
+                    self.timerCompleted()
                     return
                 }
             } else {
                 // 正常减少一秒
-                if remainingSeconds > 0 {
-                    remainingSeconds -= 1
+                if self.remainingSeconds > 0 {
+                    self.remainingSeconds -= 1
                     
                     // 更新Boss血条进度
-                    if isWorkMode {
-                        updateBossHealthProgress()
+                    if self.isWorkMode {
+                        self.updateBossHealthProgress()
                     }
                 } else {
                     // 计时结束
-                    timer?.invalidate()
-                    timer = nil
-                    isTimerRunning = false
-                    timerCompleted()
+                    self.timer?.invalidate()
+                    self.timer = nil
+                    self.isTimerRunning = false
+                    self.timerCompleted()
                 }
             }
         }
+        
+        // 确保计时器在后台也能运行
+        if let timer = timer {
+            RunLoop.current.add(timer, forMode: .common)
+        }
+        
         isTimerRunning = true
     }
     
@@ -1503,7 +1548,7 @@ struct MainView: View {
         if isWorkMode {
             // 获取当前时间，计算自开始以来的总时间
             let currentDate = Date()
-            let totalElapsedSeconds = Int(currentDate.timeIntervalSince(timerStartDate))
+            let totalElapsedSeconds = Int(currentDate.timeIntervalSince(timerStartDate) - totalBackgroundTime)
             
             // 计算实际工作了多少秒，使用初始剩余时间和计时器启动以来的真实经过时间作为上限
             let reportedWorkSeconds = initialWorkSeconds - remainingSeconds

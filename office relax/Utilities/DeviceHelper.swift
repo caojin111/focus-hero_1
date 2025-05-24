@@ -176,13 +176,13 @@ class DeviceHelper {
     var timerPosition: (x: CGFloat, y: CGFloat) {
         switch deviceType {
         case .iPhone:
-            return (-10, 50)
+            return (0, 50)  // x轴偏移始终为0，保持在屏幕中心
         case .iPad:
-            return (-3, 10) // 把X轴偏移从0改回-3
+            return (0, 10)  // x轴偏移始终为0，保持在屏幕中心
         case .iPadPro:
-            return (-3, 5) // 把X轴偏移从0改回-3
+            return (0, 5)   // x轴偏移始终为0，保持在屏幕中心
         case .unknown:
-            return (-3, 50)
+            return (0, 50)  // x轴偏移始终为0，保持在屏幕中心
         }
     }
     
