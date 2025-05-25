@@ -468,4 +468,14 @@ class AudioManager: ObservableObject {
             }
         }
     }
+    
+    // 获取工作模式音乐播放状态
+    var isWorkMusicPlaying: Bool {
+        return workModePlayer?.isPlaying ?? false
+    }
+    
+    // 获取休息模式音乐播放状态
+    var isRelaxMusicPlaying: Bool {
+        return relaxModePlayer?.isPlaying ?? false
+    }
 } 

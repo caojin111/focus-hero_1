@@ -320,6 +320,16 @@ class ShopManager: ObservableObject {
                         shopItems[shopIndex].isEquipped = true
                     }
                     
+                    // 如果是sound_2，发送装备状态变更通知
+                    if itemId == "sound_2" {
+                        print("装备sound_2，启用攻击音效")
+                        // 发送通知以刷新攻击音效状态
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("EquipmentStatusChanged"),
+                            object: nil
+                        )
+                    }
+                    
                     stateChanged = true
                 }
             }

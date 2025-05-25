@@ -691,6 +691,9 @@ struct MainView: View {
                 // 主动从Keychain加载装备状态
                 ShopManager.shared.loadAndApplyEquippedItems()
                 
+                // 强制更新所有状态
+                forceUpdateAllStates()
+                
                 // 检查和应用effect_3状态
                 if self.isWorkMode && self.isEffect3Equipped() {
                     // 强制重新加载hammer girl动画
@@ -1883,6 +1886,33 @@ struct MainView: View {
             // 触发成功振动反馈
             feedbackGenerator.notificationOccurred(.success)
         }
+    }
+    
+    // 强制更新所有状态
+    private func forceUpdateAllStates() {
+        // 强制更新AttackSoundManager中的sound_2装备状态
+        AttackSoundManager.shared.forceUpdateSound2Status()
+        
+        // 检查是否已装备effect_3
+        if isEffect3Equipped() {
+            // 已装备effect_3，设置入场完成状态并加载hammer girl动画
+            isHeroEntryCompleted = true
+            notifyHeroEntryState(completed: true)
+            
+            // 强制加载hammer girl动画
+            AnimationManager.shared.safeReloadAnimation(for: "hammer.run")
+            AnimationManager.shared.safeReloadAnimation(for: "hammer.attack")
+        }
+        
+        // 通知AttackSoundManager当前在MainView中
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ViewStateChanged"),
+            object: nil,
+            userInfo: ["viewName": "MainView"]
+        )
+        
+        // 通知AttackSoundManager英雄入场动画状态
+        notifyHeroEntryState(completed: isHeroEntryCompleted)
     }
 }
 

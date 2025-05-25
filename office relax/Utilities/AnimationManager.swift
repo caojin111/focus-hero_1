@@ -577,6 +577,13 @@ class AttackSoundManager {
         
         if oldStatus != isSound2Equipped {
             print("Sound_2装备状态变更: \(isSound2Equipped ? "已装备" : "未装备")")
+            
+            // 发送通知确保其他组件能够感知
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SoundEffectStatusUpdated"),
+                object: nil,
+                userInfo: ["isSound2Equipped": isSound2Equipped]
+            )
         }
     }
     

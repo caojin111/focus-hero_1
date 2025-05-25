@@ -12,6 +12,7 @@ struct ShopView: View {
     @State private var showUnequipDialog = false
     @State private var showErrorDialog = false
     @State private var errorMessage = ""
+    @State private var showPreview = false
     
     var body: some View {
         ZStack {
@@ -114,6 +115,21 @@ struct ShopView: View {
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
             )
+            
+            // 预览窗口
+            if showPreview, let item = selectedItem {
+                ItemPreviewView(
+                    item: item,
+                    onPurchase: {
+                        showPreview = false
+                        showPurchaseDialog = true
+                    },
+                    onDismiss: {
+                        showPreview = false
+                        selectedItem = nil
+                    }
+                )
+            }
             
             // 购买确认弹窗
             if showPurchaseDialog, let item = selectedItem {
@@ -268,24 +284,15 @@ struct ShopView: View {
     private func handleItemTap(_ item: ShopItem) {
         selectedItem = item
         
-        // 检查是否为starter pack物品（effect_3或effect_6）且未购买
+        // 检查是否为starter pack物品且未购买
         if (item.id == "effect_3" || item.id == "effect_6") && !(item.isPurchased ?? false) {
-            // 设置一个通知，通知MainView打开礼包页面
             NotificationCenter.default.post(name: NSNotification.Name("OpenGiftPackage"), object: nil)
-            // 关闭商店页面
             presentationMode.wrappedValue.dismiss()
             return
         }
         
-        if item.isPurchased ?? false {
-            if shopManager.isItemEquipped(itemId: item.id) {
-                showUnequipDialog = true
-            } else {
-                showEquipDialog = true
-            }
-        } else {
-            showPurchaseDialog = true
-        }
+        // 显示预览窗口
+        showPreview = true
     }
     
     private func handlePurchase(_ item: ShopItem) {
