@@ -107,10 +107,10 @@
       "lightning": {
         "frames": ["lightning_1", "lightning_2", "lightning_3", "lightning_4", "lightning_5"],
         "fps": 12,
-        "scale": 0.7,
+        "scale": 1.2,
         "offset": {
           "x": 180,
-          "y": -50
+          "y": -80
         },
         "loop": false
       }

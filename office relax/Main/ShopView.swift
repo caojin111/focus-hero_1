@@ -121,7 +121,6 @@ struct ShopView: View {
                 ItemPreviewView(
                     item: item,
                     onPurchase: {
-                        showPreview = false
                         showPurchaseDialog = true
                     },
                     onDismiss: {
@@ -141,7 +140,6 @@ struct ShopView: View {
                     },
                     onCancel: {
                         audioManager.playSound("click")
-                        selectedItem = nil
                         showPurchaseDialog = false
                     }
                 )
@@ -540,7 +538,7 @@ struct EquipDialog: View {
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                Text("Sure to equip \(item.name)？")
+                Text("Sure to equip \(item.name)?")
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 
@@ -590,7 +588,7 @@ struct UnequipDialog: View {
                     .font(.title2)
                     .foregroundColor(.white)
                 
-                Text("Sure to take off \(item.name)？")
+                Text("Sure to take off \(item.name)?")
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                 

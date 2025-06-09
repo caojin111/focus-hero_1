@@ -10,6 +10,7 @@
 		031A56B32DBCEF060058A36B /* onboarding_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A56B22DBCEF060058A36B /* onboarding_music.mp3 */; };
 		031A56FD2DBCF43C0058A36B /* stinger.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A56FC2DBCF43C0058A36B /* stinger.mp3 */; };
 		031A57072DBD31070058A36B /* click.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 031A57062DBD31070058A36B /* click.mp3 */; };
+		0333F63F2DE592C400649DF8 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0333F63E2DE592C400649DF8 /* SDWebImageSwiftUI */; };
 		03698E132DC51A140075EF8B /* relax_music_2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 03698E122DC51A140075EF8B /* relax_music_2.mp3 */; };
 		03698E152DC51A380075EF8B /* work_music_2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 03698E142DC51A380075EF8B /* work_music_2.mp3 */; };
 		037E0A012DBBAB1E0014996A /* work_music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 037E0A002DBBAB1D0014996A /* work_music.mp3 */; };
@@ -89,11 +90,13 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			fileType = image.png;
 			inputFiles = (
+				"$(SRCROOT)/office relax/Resources/Shop/Preview/$(INPUT_FILE_NAME)",
 			);
 			isEditable = 1;
 			outputFiles = (
+				"$(DERIVED_FILE_DIR)/$(INPUT_FILE_NAME)",
 			);
-			script = "# copypng\n";
+			script = "# copypng\ncp \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 		};
 /* End PBXBuildRule section */
 
@@ -212,6 +215,7 @@
 				03AE43D32DC9018700BDD768 /* FirebaseCrashlytics in Frameworks */,
 				03AE43D12DC9018700BDD768 /* FirebaseCore in Frameworks */,
 				03AE43C72DC9018700BDD768 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				0333F63F2DE592C400649DF8 /* SDWebImageSwiftUI in Frameworks */,
 				03AE43AF2DC9007D00BDD768 /* FirebaseFunctionsCombine-Community in Frameworks */,
 				03AE43DB2DC9018700BDD768 /* FirebaseFirestoreCombine-Community in Frameworks */,
 				03AE445A2DC9119200BDD768 /* FirebaseDatabase in Frameworks */,
@@ -390,6 +394,7 @@
 				03AE44712DC9119200BDD768 /* FirebaseStorage */,
 				03AE44732DC9119200BDD768 /* FirebaseStorageCombine-Community */,
 				03AE44752DC9119200BDD768 /* FirebaseVertexAI */,
+				0333F63E2DE592C400649DF8 /* SDWebImageSwiftUI */,
 			);
 			productName = "office relax";
 			productReference = 03A2AEAF2DB652B10085EA8D /* office relax.app */;
@@ -476,6 +481,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				03AE43912DC8F8A800BDD768 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				0333F5CA2DE5908300649DF8 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 03A2AEB02DB652B10085EA8D /* Products */;
@@ -894,6 +900,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0333F5CA2DE5908300649DF8 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.3;
+			};
+		};
 		03AE43912DC8F8A800BDD768 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -905,6 +919,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0333F63E2DE592C400649DF8 /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0333F5CA2DE5908300649DF8 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
+		};
 		03AE43922DC9007C00BDD768 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FirebaseAnalytics;

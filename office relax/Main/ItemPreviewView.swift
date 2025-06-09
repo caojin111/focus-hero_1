@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import SDWebImageSwiftUI
 
 struct ItemPreviewView: View {
     let item: ShopItem
@@ -46,19 +47,34 @@ struct ItemPreviewView: View {
                     // 预览背景
                     RoundedRectangle(cornerRadius: 15)
                         .fill(Color.black.opacity(0.5))
-                        .frame(height: 300)
+                        .frame(width: 300, height: 300) // 明确正方形
                     
-                    // 根据商品类型显示不同的预览内容
+                    // 只在正方形区域内显示 GIF
                     Group {
                         switch item.type {
                         case .effect:
-                            // 特效预览
-                            Image(item.imageName)
+                            AnimatedImage(name: "\(item.id)_preview.gif")
                                 .resizable()
-                                .scaledToFit()
-                                .frame(height: 250)
+                                .aspectRatio(1, contentMode: .fit)
+                                .frame(width: 300, height: 300)
+                        case .background:
+                            if item.id == "bg_1" {
+                                Image("bg_work_2")
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .frame(width: 300, height: 300)
+                            } else if item.id == "bg_2" {
+                                Image("bg_relax_2")
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .frame(width: 300, height: 300)
+                            }
+                        case .premium:
+                            AnimatedImage(name: "\(item.id)_preview.gif")
+                                .resizable()
+                                .aspectRatio(1, contentMode: .fit)
+                                .frame(width: 300, height: 300)
                         case .sound, .bgm:
-                            // 音效/BGM预览
                             VStack {
                                 Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                                     .font(.system(size: 60))
@@ -66,22 +82,10 @@ struct ItemPreviewView: View {
                                     .onTapGesture {
                                         toggleAudio()
                                     }
-                                Text(isPlaying ? "点击暂停" : "点击播放")
+                                Text(isPlaying ? "click to stop" : "click to play")
                                     .foregroundColor(.white)
                                     .padding(.top, 10)
                             }
-                        case .background:
-                            // 背景预览
-                            Image(item.imageName)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 250)
-                        case .premium:
-                            // 礼包预览
-                            Image(item.imageName)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 250)
                         }
                     }
                 }
@@ -110,7 +114,7 @@ struct ItemPreviewView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: isEquipped ? "xmark.circle.fill" : "checkmark.circle.fill")
                                     .font(.system(size: 20))
-                                Text(isEquipped ? "脱下" : "装备")
+                                Text(isEquipped ? "Take off" : "Equip")
                                     .font(.system(size: 16, weight: .medium))
                             }
                             .foregroundColor(.white)
@@ -126,10 +130,11 @@ struct ItemPreviewView: View {
                             )
                         }
                         .buttonStyle(ScaleButtonStyle()) // 添加按压效果
+                        .padding(.bottom, 20) // 添加底部间距，避免被边缘遮挡
+                        .id("equipButton_\(item.id)_\(isEquipped)") // 添加唯一ID以保持状态稳定
                     } else {
                         // 购买按钮
                         Button(action: {
-                            stopPreview()
                             onPurchase()
                         }) {
                             HStack {
@@ -150,6 +155,7 @@ struct ItemPreviewView: View {
                             .background(Color.blue)
                             .cornerRadius(25)
                         }
+                        .padding(.bottom, 20) // 添加底部间距，避免被边缘遮挡
                     }
                 }
                 .padding(.top, 20)
