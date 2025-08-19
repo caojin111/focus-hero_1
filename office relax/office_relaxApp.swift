@@ -11,6 +11,7 @@ import Network
 import StoreKit
 import FirebaseCore
 import FirebaseCrashlytics
+import BackgroundTasks
 
 // 添加Info.plist描述
 /*
@@ -85,6 +86,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // 加载App内购商品信息
         _ = GiftPackageManager.shared
         
+        // 初始化后台计时管理器
+        _ = BackgroundTimerManager.shared
+        
+        // 请求后台刷新权限
+        requestBackgroundRefreshPermission()
+        
+        // 启用后台获取
+        application.setMinimumBackgroundFetchInterval(UIApplication.backgroundFetchIntervalMinimum)
+        
+        // 立即检查权限状态并打印日志
+        print("AppDelegate: 应用启动完成，权限状态检查:")
+        print("- 后台刷新状态: \(UIApplication.shared.backgroundRefreshStatus.rawValue)")
+        print("- 后台模式配置: \(Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") ?? "未配置")")
+        
         return true
     }
     
@@ -120,6 +135,52 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }
         task.resume()
+    }
+    
+    // 请求后台刷新权限
+    private func requestBackgroundRefreshPermission() {
+        print("AppDelegate: 开始请求后台刷新权限")
+        
+        // 首先检查当前的后台刷新状态
+        let backgroundRefreshStatus = UIApplication.shared.backgroundRefreshStatus
+        print("AppDelegate: 当前后台刷新状态: \(backgroundRefreshStatus.rawValue)")
+        
+        switch backgroundRefreshStatus {
+        case .available:
+            print("AppDelegate: 后台应用刷新已启用")
+            // 设置后台任务
+            BackgroundTimerManager.shared.setupBackgroundTasksIfNeeded()
+        case .denied:
+            print("AppDelegate: 后台应用刷新被拒绝")
+        case .restricted:
+            print("AppDelegate: 后台应用刷新受限制")
+        @unknown default:
+            print("AppDelegate: 后台应用刷新状态未知")
+        }
+        
+        // 请求通知权限
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                if granted {
+                    print("AppDelegate: 通知权限已获取")
+                    
+                    // 再次检查后台应用刷新权限
+                    let currentStatus = UIApplication.shared.backgroundRefreshStatus
+                    print("AppDelegate: 通知权限获取后，后台刷新状态: \(currentStatus.rawValue)")
+                    
+                    if currentStatus == .available {
+                        print("AppDelegate: 后台应用刷新权限已可用")
+                        // 设置后台任务
+                        BackgroundTimerManager.shared.setupBackgroundTasksIfNeeded()
+                    } else {
+                        print("AppDelegate: 后台应用刷新权限不可用，状态: \(currentStatus.rawValue)")
+                        print("AppDelegate: 提示用户手动开启后台应用刷新权限")
+                    }
+                } else {
+                    print("AppDelegate: 通知权限被拒绝: \(error?.localizedDescription ?? "未知错误")")
+                }
+            }
+        }
     }
 }
 

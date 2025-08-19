@@ -265,6 +265,7 @@ extension NSNotification.Name {
 struct MainView: View {
     @StateObject private var userDataManager = UserDataManager.shared
     @StateObject private var audioManager = AudioManager.shared
+    @StateObject private var backgroundTimerManager = BackgroundTimerManager.shared
     // 初始化AttackSoundManager
     private let attackSoundManager = AttackSoundManager.shared
     @State private var isWorkMode = true
@@ -273,16 +274,11 @@ struct MainView: View {
     @State private var timer: Timer? = nil
     @State private var initialWorkSeconds: Int = 0
     
-    // 添加后台时间计算相关属性
-    @State private var backgroundTime: Date?
-    @State private var totalBackgroundTime: TimeInterval = 0
-    
     // 英雄动画相关状态
     @State private var isHeroEntryCompleted = false // 跟踪入场动画是否完成
     @State private var entryAnimationTimer: Timer? = nil // 用于计时入场动画结束
     
     // 记录开始时间和上次更新时间，用于防止时间修改
-    @State private var timerStartDate: Date = Date()
     @State private var lastTickDate: Date = Date()
     
     // 场景切换效果相关状态
@@ -294,6 +290,7 @@ struct MainView: View {
     @State private var showShop = false  // 控制商店弹窗的显示
     @State private var showGiftPackage = false  // 控制礼包弹窗的显示
     @State private var showStartFocus = true  // 控制 StartFocus 视图的显示
+    @State private var showPermissionAlert = false  // 控制权限提示弹窗的显示
     
     // 穿帮防护
     @State private var contentLoaded = false // 内容是否已加载完成
@@ -762,48 +759,44 @@ struct MainView: View {
                 showStartFocus = true
             }
             
-            // 添加应用状态变化观察者
+            // 添加计时器完成通知观察者
             NotificationCenter.default.addObserver(
-                forName: UIApplication.willResignActiveNotification,
+                forName: NSNotification.Name("TimerCompleted"),
                 object: nil,
                 queue: .main
             ) { _ in
-                // 应用进入后台
-                backgroundTime = Date()
+                // 计时器在后台完成，触发完成处理
+                print("MainView: 收到计时器完成通知")
+                self.timerCompleted()
             }
             
+            // 添加工作时长更新通知观察者
             NotificationCenter.default.addObserver(
-                forName: UIApplication.didBecomeActiveNotification,
+                forName: NSNotification.Name("WorkDurationUpdated"),
                 object: nil,
                 queue: .main
-            ) { _ in
-                // 应用回到前台
-                if let backgroundTime = backgroundTime {
-                    let timeInBackground = Date().timeIntervalSince(backgroundTime)
-                    totalBackgroundTime += timeInBackground
-                    self.backgroundTime = nil
-                    
-                    // 更新剩余时间
-                    let currentDate = Date()
-                    let totalElapsedTime = currentDate.timeIntervalSince(timerStartDate)
-                    let actualElapsedTime = totalElapsedTime - totalBackgroundTime
-                    
-                    // 计算应该减少的秒数
-                    let secondsToDecrease = Int(actualElapsedTime)
-                    
-                    if remainingSeconds > secondsToDecrease {
-                        remainingSeconds -= secondsToDecrease
-                    } else {
-                        remainingSeconds = 0
-                        timerCompleted()
-                    }
-                    
-                    // 更新Boss血条进度
-                    if isWorkMode {
-                        updateBossHealthProgress()
-                    }
-                }
+            ) { notification in
+                // 工作时长更新，如果当前是工作模式且计时器正在运行，则重置计时器
+                print("MainView: 收到工作时长更新通知")
+                self.handleWorkDurationUpdate(notification)
             }
+            
+            // 添加休息时长更新通知观察者
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("RelaxDurationUpdated"),
+                object: nil,
+                queue: .main
+            ) { notification in
+                // 休息时长更新，如果当前是休息模式且计时器正在运行，则重置计时器
+                print("MainView: 收到休息时长更新通知")
+                self.handleRelaxDurationUpdate(notification)
+            }
+            
+            // 检查后台权限
+            checkBackgroundPermissions()
+            
+            // 检查计时器状态
+            checkTimerStateOnAppear()
         }
         .edgesIgnoringSafeArea(.bottom)  // 忽略底部安全区域，让内容延伸到屏幕底部
         .onDisappear {
@@ -824,8 +817,19 @@ struct MainView: View {
             notifyViewState(viewName: "OtherView")
             
             // 移除通知观察者
-            NotificationCenter.default.removeObserver(self, name: UIApplication.willResignActiveNotification, object: nil)
-            NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("TimerCompleted"), object: nil)
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("WorkDurationUpdated"), object: nil)
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name("RelaxDurationUpdated"), object: nil)
+        }
+        .alert("后台权限设置", isPresented: $showPermissionAlert) {
+            Button("去设置") {
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            }
+            Button("稍后设置", role: .cancel) { }
+        } message: {
+            Text("为了确保计时器在后台正常运行，请在设置中开启\"后台应用刷新\"权限。\n\n设置路径：设置 → 通用 → 后台应用刷新 → Focus Buddy")
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
@@ -959,7 +963,8 @@ struct MainView: View {
                     
                     // 黑屏消失后启动计时器
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        startTimer()
+                        // 重新设置计时器
+                        setupTimer()
                     }
                 }
             }
@@ -1478,60 +1483,59 @@ struct MainView: View {
             remainingSeconds = userDataManager.getRelaxDuration() * 60
         }
         
-        // 自动启动计时器
-        startTimer()
+        // 使用后台计时管理器启动计时器
+        backgroundTimerManager.startTimer(workMode: isWorkMode, duration: remainingSeconds)
+        
+        // 同步状态
+        isTimerRunning = backgroundTimerManager.isTimerRunning
+        remainingSeconds = backgroundTimerManager.remainingSeconds
+        
+        // 启动UI更新定时器
+        startUITimer()
+        
+        print("MainView: 计时器已启动 - 模式: \(isWorkMode ? "工作" : "休息"), 剩余时间: \(remainingSeconds)秒")
     }
     
-    // 启动计时器
-    func startTimer() {
+    // 启动UI更新定时器
+    func startUITimer() {
         // 确保之前的计时器已停止
         timer?.invalidate()
         
-        // 记录计时器开始时间
-        timerStartDate = Date()
-        lastTickDate = timerStartDate
-        totalBackgroundTime = 0
-        
-        // 创建新计时器
+        // 创建UI更新定时器
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            // 获取当前时间
-            let currentDate = Date()
+            // 更新后台计时管理器的实时状态
+            self.backgroundTimerManager.updateTimerInRealTime()
             
-            // 计算两次计时器触发之间的实际时间差（秒）
-            let timeDifference = currentDate.timeIntervalSince(self.lastTickDate)
+            // 从后台计时管理器获取最新状态
+            let status = self.backgroundTimerManager.getCurrentStatus()
             
-            // 更新上次触发时间
-            self.lastTickDate = currentDate
+            // 更新UI状态
+            self.isTimerRunning = status.isRunning
+            self.remainingSeconds = status.remainingSeconds
             
-            // 检查时间差异是否合理（允许0.5秒的误差）
-            if timeDifference < 0 || timeDifference > 1.5 {
-                // 时间可能被修改，记录异常
-                print("Time manipulation detected: \(timeDifference) seconds")
-                
-                // 最保守的做法：减去实际时间
-                if self.remainingSeconds > 0 {
-                    let decrementAmount = max(1, min(Int(timeDifference), 5))
-                    self.remainingSeconds -= decrementAmount
-                } else {
-                    self.timerCompleted()
-                    return
-                }
-            } else {
-                // 正常减少一秒
-                if self.remainingSeconds > 0 {
-                    self.remainingSeconds -= 1
-                    
-                    // 更新Boss血条进度
-                    if self.isWorkMode {
-                        self.updateBossHealthProgress()
-                    }
-                } else {
-                    // 计时结束
-                    self.timer?.invalidate()
-                    self.timer = nil
-                    self.isTimerRunning = false
-                    self.timerCompleted()
-                }
+            // 打印调试信息
+            print("MainView: UI更新 - 剩余时间: \(self.remainingSeconds)秒, 运行状态: \(self.isTimerRunning)")
+            
+            // 更新Boss血条进度
+            if self.isWorkMode {
+                self.updateBossHealthProgress()
+            }
+            
+            // 检查计时是否完成
+            if !status.isRunning && self.remainingSeconds <= 0 && self.isTimerRunning {
+                print("MainView: UI检测到计时器完成")
+                self.timer?.invalidate()
+                self.timer = nil
+                self.isTimerRunning = false
+                self.timerCompleted()
+            } else if self.remainingSeconds <= 0 && self.isTimerRunning {
+                // 如果剩余时间为0但计时器还在运行，强制停止
+                print("MainView: 强制停止计时器（剩余时间为0）")
+                self.timer?.invalidate()
+                self.timer = nil
+                self.isTimerRunning = false
+                self.backgroundTimerManager.stopTimer()
+                self.timerCompleted()
             }
         }
         
@@ -1539,23 +1543,31 @@ struct MainView: View {
         if let timer = timer {
             RunLoop.current.add(timer, forMode: .common)
         }
-        
-        isTimerRunning = true
     }
     
     // 计时器完成处理
     func timerCompleted() {
+        print("MainView: 开始处理计时器完成")
+        
+        // 防止重复调用 - 但允许从后台恢复时的处理
+        if !isTimerRunning && remainingSeconds > 0 {
+            print("MainView: 计时器已完成且剩余时间大于0，跳过重复调用")
+            return
+        }
+        
+        // 确保计时器状态正确
+        isTimerRunning = false
+        remainingSeconds = 0
+        
         // 触发震动
         feedbackGenerator.notificationOccurred(.success)
         
         if isWorkMode {
-            // 获取当前时间，计算自开始以来的总时间
-            let currentDate = Date()
-            let totalElapsedSeconds = Int(currentDate.timeIntervalSince(timerStartDate) - totalBackgroundTime)
+            // 从后台计时管理器获取状态
+            let status = backgroundTimerManager.getCurrentStatus()
             
-            // 计算实际工作了多少秒，使用初始剩余时间和计时器启动以来的真实经过时间作为上限
-            let reportedWorkSeconds = initialWorkSeconds - remainingSeconds
-            let actualWorkSeconds = min(reportedWorkSeconds, totalElapsedSeconds)
+            // 计算实际工作了多少秒 - 如果剩余时间为0，使用初始时间
+            let actualWorkSeconds = status.remainingSeconds <= 0 ? initialWorkSeconds : (initialWorkSeconds - status.remainingSeconds)
             
             // 工作模式完成，添加金币奖励 (每秒2个金币)
             let coinsEarned = calculateCoinsReward(actualWorkSeconds)
@@ -1617,6 +1629,86 @@ struct MainView: View {
                 showStartFocus = true
             }
         }
+        
+        // 清理计时器状态
+        cleanupTimerState()
+    }
+    
+    // 清理计时器状态
+    private func cleanupTimerState() {
+        // 停止所有计时器
+        timer?.invalidate()
+        timer = nil
+        
+        // 停止后台计时器
+        backgroundTimerManager.stopTimer()
+        
+        // 清理UserDefaults中的状态
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "timer_is_running")
+        defaults.removeObject(forKey: "timer_remaining_seconds")
+        defaults.removeObject(forKey: "timer_is_work_mode")
+        defaults.removeObject(forKey: "timer_start_date")
+        defaults.removeObject(forKey: "timer_total_background_time")
+        defaults.removeObject(forKey: "timer_last_save_time")
+        
+        print("MainView: 计时器状态已清理")
+    }
+    
+    // 处理工作时长更新
+    private func handleWorkDurationUpdate(_ notification: Notification) {
+        guard let duration = notification.userInfo?["duration"] as? Int else { return }
+        
+        print("MainView: 处理工作时长更新 - 新时长: \(duration)分钟")
+        
+        // 如果当前是工作模式且计时器正在运行，则重置计时器
+        if isWorkMode && isTimerRunning {
+            print("MainView: 重置工作模式计时器")
+            
+            // 停止当前计时器
+            timer?.invalidate()
+            timer = nil
+            backgroundTimerManager.stopTimer()
+            
+            // 更新剩余时间和初始时间
+            remainingSeconds = duration * 60
+            initialWorkSeconds = duration * 60
+            
+            // 更新Boss血条进度
+            updateBossHealthProgress()
+            
+            // 重新启动计时器
+            backgroundTimerManager.startTimer(workMode: isWorkMode, duration: remainingSeconds)
+            startUITimer()
+            
+            print("MainView: 工作模式计时器已重置 - 新剩余时间: \(remainingSeconds)秒")
+        }
+    }
+    
+    // 处理休息时长更新
+    private func handleRelaxDurationUpdate(_ notification: Notification) {
+        guard let duration = notification.userInfo?["duration"] as? Int else { return }
+        
+        print("MainView: 处理休息时长更新 - 新时长: \(duration)分钟")
+        
+        // 如果当前是休息模式且计时器正在运行，则重置计时器
+        if !isWorkMode && isTimerRunning {
+            print("MainView: 重置休息模式计时器")
+            
+            // 停止当前计时器
+            timer?.invalidate()
+            timer = nil
+            backgroundTimerManager.stopTimer()
+            
+            // 更新剩余时间
+            remainingSeconds = duration * 60
+            
+            // 重新启动计时器
+            backgroundTimerManager.startTimer(workMode: isWorkMode, duration: remainingSeconds)
+            startUITimer()
+            
+            print("MainView: 休息模式计时器已重置 - 新剩余时间: \(remainingSeconds)秒")
+        }
     }
     
     // 跳过当前计时，直接进入下一阶段
@@ -1625,13 +1717,11 @@ struct MainView: View {
         feedbackGenerator.notificationOccurred(.warning)
         
         if isWorkMode {
-            // 获取实际时间流逝
-            let currentDate = Date()
-            let totalElapsedSeconds = Int(currentDate.timeIntervalSince(timerStartDate))
+            // 从后台计时管理器获取状态
+            let status = backgroundTimerManager.getCurrentStatus()
             
-            // 使用报告的工作时间和实际时间流逝的最小值
-            let reportedWorkSeconds = initialWorkSeconds - remainingSeconds
-            let actualWorkSeconds = min(reportedWorkSeconds, totalElapsedSeconds)
+            // 计算实际工作时间
+            let actualWorkSeconds = initialWorkSeconds - status.remainingSeconds
             
             // 确保至少有1秒的工作时间，以免跳过导致没有奖励
             if actualWorkSeconds > 0 {
@@ -1640,7 +1730,10 @@ struct MainView: View {
             }
         }
         
-        // 停止计时器
+        // 停止后台计时器
+        backgroundTimerManager.stopTimer()
+        
+        // 停止UI更新定时器
         timer?.invalidate()
         timer = nil
         isTimerRunning = false
@@ -1684,12 +1777,58 @@ struct MainView: View {
                     
                     // 黑屏消失后启动计时器
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        startTimer()
+                        // 重新设置计时器
+                        setupTimer()
                     }
                 }
             } else {
-                // 休息模式跳过，调用原始方法处理
-                timerCompleted()
+                // 休息模式跳过，切换到工作模式
+                isWorkMode = true
+                remainingSeconds = userDataManager.getWorkDuration() * 60
+                initialWorkSeconds = userDataManager.getWorkDuration() * 60
+                
+                // 停止音乐
+                audioManager.stopAllMusic()
+                
+                // 重置入场动画状态
+                isHeroEntryCompleted = false
+                
+                // 预加载工作模式动画
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "hero.run")
+                _ = AnimationManager.shared.getAnimationInfo(for: "boss.idle")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.wizard_attack")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.lightning")
+                _ = AnimationManager.shared.getAnimationInfo(for: "effect.cat")
+                
+                // 如果装备了effect_3，预加载hammer girl动画
+                if isEffect3Equipped() {
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.run")
+                    _ = AnimationManager.shared.getAnimationInfo(for: "hammer.attack")
+                }
+                
+                // 先显示 StartFocusView - 保持黑屏，在StartFocusView完成后再淡出
+                showStartFocus = true
+                
+                // 发送工作模式变更通知
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("WorkModeChanged"),
+                    object: nil,
+                    userInfo: ["isWorkMode": true]
+                )
+                
+                // 短暂延迟后淡出黑屏，显示新场景
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isShowingTransition = false
+                    }
+                    
+                    // 黑屏消失后启动计时器
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        // 重新设置计时器
+                        setupTimer()
+                    }
+                }
             }
         }
     }
@@ -1703,13 +1842,11 @@ struct MainView: View {
     // 预览即将获得的金币奖励
     func previewCoinsReward() -> Int {
         if isWorkMode {
-            // 获取当前实际经过的时间（秒）
-            let currentDate = Date()
-            let totalElapsedSeconds = Int(currentDate.timeIntervalSince(timerStartDate))
+            // 从后台计时管理器获取状态
+            let status = backgroundTimerManager.getCurrentStatus()
             
-            // 根据已工作时间计算，但以实际经过的时间为上限
-            let reportedWorkSeconds = initialWorkSeconds - remainingSeconds
-            let actualWorkSeconds = min(reportedWorkSeconds, totalElapsedSeconds)
+            // 计算实际工作时间
+            let actualWorkSeconds = initialWorkSeconds - status.remainingSeconds
             
             return calculateCoinsReward(actualWorkSeconds)
         } else {
@@ -1728,11 +1865,14 @@ struct MainView: View {
         timer?.invalidate()
         timer = nil
         
-        // 2. 暂停音乐和音效
+        // 2. 暂停后台计时器
+        backgroundTimerManager.pauseTimer()
+        
+        // 3. 暂停音乐和音效
         audioManager.pauseAllMusic()
         audioManager.pauseAllSounds()
         
-        // 3. 暂停动画 - 通过截取当前帧实现
+        // 4. 暂停动画 - 通过截取当前帧实现
         pauseAnimations()
     }
     
@@ -1744,17 +1884,20 @@ struct MainView: View {
         
         isPaused = false
         
-        // 1. 恢复计时器
-        startTimer()
+        // 1. 恢复后台计时器
+        backgroundTimerManager.resumeTimer()
         
-        // 2. 恢复音乐
+        // 2. 恢复UI更新定时器
+        startUITimer()
+        
+        // 3. 恢复音乐
         if isWorkMode {
             audioManager.resumeWorkMusic()
         } else {
             audioManager.resumeRelaxMusic()
         }
         
-        // 3. 恢复动画
+        // 4. 恢复动画
         resumeAnimations()
     }
     
@@ -1809,6 +1952,38 @@ struct MainView: View {
     // 设置倒计时区域缩放
     func setTimerScale(_ scale: CGFloat) {
         timerScale = scale
+    }
+    
+    // 检查后台权限
+    private func checkBackgroundPermissions() {
+        let backgroundRefreshStatus = UIApplication.shared.backgroundRefreshStatus
+        print("MainView: 检查后台权限状态: \(backgroundRefreshStatus.rawValue)")
+        
+        // 延迟检查，确保UI已经完全加载
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            let currentStatus = UIApplication.shared.backgroundRefreshStatus
+            print("MainView: 延迟检查后台权限状态: \(currentStatus.rawValue)")
+            
+            if currentStatus != .available {
+                print("MainView: 后台权限不可用，显示权限提示")
+                self.showPermissionAlert = true
+            }
+        }
+    }
+    
+    // 检查计时器状态
+    private func checkTimerStateOnAppear() {
+        // 延迟检查，确保后台计时管理器已初始化
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            let status = self.backgroundTimerManager.getCurrentStatus()
+            print("MainView: 检查计时器状态 - 运行: \(status.isRunning), 剩余时间: \(status.remainingSeconds)")
+            
+            // 如果计时器已完成但还在运行状态，强制触发完成处理
+            if status.isRunning && status.remainingSeconds <= 0 {
+                print("MainView: 检测到计时器已完成，触发完成处理")
+                self.timerCompleted()
+            }
+        }
     }
     
     // 重置倒计时区域位置和大小

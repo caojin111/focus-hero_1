@@ -62,5 +62,15 @@
 	<string>1:412096439505:ios:9cd869f4669ac00d0911f0</string>
 	<key>CFBundleDisplayName</key>
 	<string>Focus Buddy</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-processing</string>
+		<string>background-fetch</string>
+		<string>background-app-refresh</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.focusbuddy.timer</string>
+	</array>
 </dict>
 </plist>

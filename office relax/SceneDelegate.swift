@@ -54,6 +54,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillEnterForeground(_ scene: UIScene) {
         print("应用进入前台")
         
+        // 通知后台计时管理器应用回到前台
+        BackgroundTimerManager.shared.applicationDidBecomeActive()
+        
         // 当应用进入前台时，强制刷新ShopManager以确保装备状态正确
         ShopManager.shared.refreshItems()
         
@@ -113,6 +116,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func sceneWillResignActive(_ scene: UIScene) {
         print("应用即将进入非活跃状态")
+        
+        // 通知后台计时管理器应用即将进入后台
+        BackgroundTimerManager.shared.applicationWillResignActive()
         
         // 应用即将进入非活跃状态
         // 保存当前装备状态到Keychain

@@ -37,6 +37,7 @@ struct SettingsView: View {
                         }
                         Slider(value: $workDuration, in: 1...60, step: 1)
                             .onChange(of: workDuration) { newValue in
+                                print("SettingsView: 工作时长更新为 \(Int(newValue)) 分钟")
                                 userDataManager.updateWorkDuration(Int(newValue))
                             }
                     }
@@ -50,6 +51,7 @@ struct SettingsView: View {
                         }
                         Slider(value: $relaxDuration, in: 5...30, step: 1)
                             .onChange(of: relaxDuration) { newValue in
+                                print("SettingsView: 休息时长更新为 \(Int(newValue)) 分钟")
                                 userDataManager.updateRelaxDuration(Int(newValue))
                             }
                     }

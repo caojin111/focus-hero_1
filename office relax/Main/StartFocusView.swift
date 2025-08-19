@@ -25,7 +25,7 @@ struct StartFocusView: View {
     @State private var numberScale = 0.5
     @State private var closeScale = 1.0
     @State private var closeOpacity = 1.0
-    @State private var tipOpacity = 0.0
+
     @State private var breatheEffect = false // 呼吸效果状态
     @State private var numberBreatheScale = 1.0 // 数字呼吸效果缩放
     
@@ -89,13 +89,6 @@ struct StartFocusView: View {
                 }
                 
                 Spacer()
-                
-                // 底部提示文本
-                Text("Tip: You can't get coins by skipping focus")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
-                    .opacity(tipOpacity)
-                    .padding(.bottom, 50)
             }
             .padding()
             .scaleEffect(closeScale)
@@ -150,13 +143,8 @@ struct StartFocusView: View {
             startNumberBreathingEffect()
         }
         
-        // 提示文本动画 - 最后淡入显示
+        // 所有动画完成，可以接受点击
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            withAnimation(.easeIn(duration: 0.6)) {
-                tipOpacity = 1.0
-            }
-            
-            // 所有动画完成，可以接受点击
             animationCompleted = true
         }
     }

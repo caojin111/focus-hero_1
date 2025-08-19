@@ -104,12 +104,26 @@ class UserDataManager: ObservableObject {
     func updateWorkDuration(_ duration: Int) {
         userProfile.recommendedWorkDuration = duration
         saveUserProfile()
+        
+        // 发送工作时长更新通知
+        NotificationCenter.default.post(
+            name: NSNotification.Name("WorkDurationUpdated"),
+            object: nil,
+            userInfo: ["duration": duration]
+        )
     }
     
     // 更新休息时长
     func updateRelaxDuration(_ duration: Int) {
         userProfile.recommendedRelaxDuration = duration
         saveUserProfile()
+        
+        // 发送休息时长更新通知
+        NotificationCenter.default.post(
+            name: NSNotification.Name("RelaxDurationUpdated"),
+            object: nil,
+            userInfo: ["duration": duration]
+        )
     }
     
     // 增加专注次数
