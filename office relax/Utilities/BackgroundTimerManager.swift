@@ -9,6 +9,7 @@ import Foundation
 import UserNotifications
 import BackgroundTasks
 import UIKit
+import AVFoundation
 
 class BackgroundTimerManager: ObservableObject {
     static let shared = BackgroundTimerManager()
@@ -26,14 +27,19 @@ class BackgroundTimerManager: ObservableObject {
     private var backgroundTime: Date?
     private var totalBackgroundTime: TimeInterval = 0
     
-    // 本地通知相关
-    private var timerNotification: UNMutableNotificationContent?
+    // 后台任务相关
     private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    
+    // 音频保活相关
+    private var silentAudioPlayer: AVAudioPlayer?
+    private var audioSessionMonitor: Timer?
     
     private init() {
         print("BackgroundTimerManager: 初始化后台计时管理器")
         setupBackgroundTasks()
         requestNotificationPermission()
+        setupAudioSession()
+        startAudioSessionMonitoring()
         
         // 检查是否有未完成的计时器状态
         checkForUnfinishedTimer()
@@ -116,6 +122,46 @@ class BackgroundTimerManager: ObservableObject {
         }
     }
     
+    // MARK: - 通知权限检查
+    func checkNotificationPermission() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                print("BackgroundTimerManager: 通知权限检查:")
+                print("- 授权状态: \(settings.authorizationStatus.rawValue)")
+                print("- 通知中心: \(settings.notificationCenterSetting.rawValue)")
+                print("- 锁定屏幕: \(settings.lockScreenSetting.rawValue)")
+                print("- 横幅: \(settings.alertSetting.rawValue)")
+                print("- 声音: \(settings.soundSetting.rawValue)")
+                print("- 角标: \(settings.badgeSetting.rawValue)")
+                
+                if settings.authorizationStatus == .authorized {
+                    print("BackgroundTimerManager: ✅ 通知权限已授权")
+                } else {
+                    print("BackgroundTimerManager: ❌ 通知权限未授权")
+                }
+            }
+        }
+    }
+    
+    // 测试通知功能
+    func testNotification() {
+        print("BackgroundTimerManager: 开始测试通知功能")
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Test Notification"
+        content.body = "This is a test notification from Focus Buddy"
+        content.sound = .default
+        
+        let request = UNNotificationRequest(identifier: "test_notification", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("BackgroundTimerManager: 测试通知发送失败: \(error)")
+            } else {
+                print("BackgroundTimerManager: ✅ 测试通知已发送")
+            }
+        }
+    }
+    
     // MARK: - 计时器控制
     func startTimer(workMode: Bool, duration: Int) {
         print("BackgroundTimerManager: 启动计时器 - 模式: \(workMode ? "工作" : "休息"), 时长: \(duration)秒")
@@ -125,6 +171,9 @@ class BackgroundTimerManager: ObservableObject {
         remainingSeconds = duration
         timerStartDate = Date()
         totalBackgroundTime = 0
+        
+        // 启动音频保活
+        startAudioKeepAlive()
         
         // 安排后台任务
         scheduleBackgroundTask()
@@ -143,6 +192,9 @@ class BackgroundTimerManager: ObservableObject {
         timerStartDate = nil
         backgroundTime = nil
         totalBackgroundTime = 0
+        
+        // 停止音频保活
+        stopAudioKeepAlive()
         
         // 取消通知
         cancelTimerNotification()
@@ -214,6 +266,7 @@ class BackgroundTimerManager: ObservableObject {
     // MARK: - 实时计时更新（供UI调用）
     func updateTimerInRealTime() {
         guard isTimerRunning, let startDate = timerStartDate else {
+            print("BackgroundTimerManager: 计时器未运行或未初始化，跳过更新")
             return
         }
         
@@ -223,52 +276,28 @@ class BackgroundTimerManager: ObservableObject {
             print("BackgroundTimerManager: 实时更新计时器，剩余时间: \(remainingSeconds)秒")
         } else {
             remainingSeconds = 0
-            isTimerRunning = false
-            print("BackgroundTimerManager: 计时器完成")
-            // 只在后台计时管理器中发送通知，不直接调用timerCompleted
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(name: NSNotification.Name("TimerCompleted"), object: nil)
-            }
+            print("BackgroundTimerManager: 计时器完成，调用timerCompleted")
+            // 调用timerCompleted来发送本地推送通知
+            timerCompleted()
         }
         
         // 额外检查：如果剩余时间为0但计时器还在运行，强制停止
         if remainingSeconds <= 0 && isTimerRunning {
-            print("BackgroundTimerManager: 强制停止计时器（剩余时间为0）")
-            isTimerRunning = false
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(name: NSNotification.Name("TimerCompleted"), object: nil)
-            }
+            print("BackgroundTimerManager: 强制停止计时器（剩余时间为0），调用timerCompleted")
+            timerCompleted()
         }
     }
     
     // MARK: - 本地通知
     private func scheduleTimerNotification() {
-        guard remainingSeconds > 0 else { return }
-        
-        let content = UNMutableNotificationContent()
-        content.title = isWorkMode ? "专注时间" : "休息时间"
-        content.body = "计时器正在运行中..."
-        content.sound = .default
-        
-        // 设置通知在计时结束时触发
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(remainingSeconds), repeats: false)
-        let request = UNNotificationRequest(identifier: "timer_notification", content: content, trigger: trigger)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("BackgroundTimerManager: 设置通知失败: \(error)")
-            } else {
-                print("BackgroundTimerManager: 计时器通知已设置，剩余时间: \(self.remainingSeconds)秒")
-            }
-        }
-        
-        timerNotification = content
+        // 专注开始时不再发送通知，只保留完成时的通知
+        print("BackgroundTimerManager: 专注开始，不发送开始通知")
     }
     
     private func cancelTimerNotification() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timer_notification"])
-        timerNotification = nil
-        print("BackgroundTimerManager: 计时器通知已取消")
+        // 清理任何可能存在的通知
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timer_completed"])
+        print("BackgroundTimerManager: 清理计时器通知")
     }
     
     // MARK: - 计时完成处理
@@ -276,21 +305,41 @@ class BackgroundTimerManager: ObservableObject {
         print("BackgroundTimerManager: 计时器完成")
         
         // 防止重复调用
-        if !isTimerRunning {
+        if !isTimerRunning && remainingSeconds > 0 {
             print("BackgroundTimerManager: 计时器已完成，跳过重复调用")
             return
         }
         
+        // 设置计时器状态为完成
         isTimerRunning = false
+        remainingSeconds = 0
         
-        // 发送通知
-        let content = UNMutableNotificationContent()
-        content.title = isWorkMode ? "专注完成！" : "休息结束"
-        content.body = isWorkMode ? "恭喜你完成了专注时间！" : "休息时间结束，准备开始新的专注吧！"
-        content.sound = .default
-        
-        let request = UNNotificationRequest(identifier: "timer_completed", content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        // 检查通知权限
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                if settings.authorizationStatus == .authorized {
+                    print("BackgroundTimerManager: ✅ 通知权限已授权，发送完成通知")
+                    
+                    // 发送完成通知（英文版）
+                    let content = UNMutableNotificationContent()
+                    content.title = self.isWorkMode ? "Focus Completed!" : "Break Finished!"
+                    content.body = self.isWorkMode ? "Great job! You've completed your focus session!" : "Break time is over. Ready for your next focus session!"
+                    content.sound = .default
+                    
+                    let request = UNNotificationRequest(identifier: "timer_completed", content: content, trigger: nil)
+                    UNUserNotificationCenter.current().add(request) { error in
+                        if let error = error {
+                            print("BackgroundTimerManager: 发送完成通知失败: \(error)")
+                        } else {
+                            print("BackgroundTimerManager: ✅ 完成通知已发送")
+                        }
+                    }
+                } else {
+                    print("BackgroundTimerManager: ❌ 通知权限未授权，无法发送通知")
+                    print("BackgroundTimerManager: 授权状态: \(settings.authorizationStatus.rawValue)")
+                }
+            }
+        }
         
         // 结束后台任务
         endBackgroundTask()
@@ -375,6 +424,114 @@ class BackgroundTimerManager: ObservableObject {
             }
             
             print("BackgroundTimerManager: 恢复状态 - 剩余时间: \(remainingSeconds)秒")
+        }
+    }
+    
+    // MARK: - 音频保活
+    private func setupAudioSession() {
+        do {
+            // 设置音频会话为播放模式，支持后台运行
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetooth])
+            try AVAudioSession.sharedInstance().setActive(true)
+            print("BackgroundTimerManager: 音频会话保活已设置")
+        } catch {
+            print("BackgroundTimerManager: 设置音频会话失败: \(error)")
+        }
+    }
+    
+    // 创建静音音频播放器用于保活
+    private func createSilentAudioPlayer() {
+        // 创建一个1秒的静音音频数据
+        let sampleRate: Double = 44100
+        let duration: Double = 1.0
+        let frameCount = Int(sampleRate * duration)
+        
+        var audioData = Data()
+        for _ in 0..<frameCount {
+            // 添加静音样本 (16位，单声道)
+            let sample: Int16 = 0
+            audioData.append(contentsOf: withUnsafeBytes(of: sample.littleEndian) { Data($0) })
+        }
+        
+        do {
+            silentAudioPlayer = try AVAudioPlayer(data: audioData)
+            silentAudioPlayer?.volume = 0.0
+            silentAudioPlayer?.numberOfLoops = -1 // 无限循环
+            silentAudioPlayer?.prepareToPlay()
+            print("BackgroundTimerManager: 静音音频播放器已创建")
+        } catch {
+            print("BackgroundTimerManager: 创建静音音频播放器失败: \(error)")
+        }
+    }
+    
+    func startAudioKeepAlive() {
+        if silentAudioPlayer == nil {
+            createSilentAudioPlayer()
+        }
+        
+        silentAudioPlayer?.play()
+        print("BackgroundTimerManager: 音频保活已启动")
+        
+        // 确保音频会话保持活跃
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            print("BackgroundTimerManager: 音频会话已重新激活")
+        } catch {
+            print("BackgroundTimerManager: 重新激活音频会话失败: \(error)")
+        }
+    }
+    
+    private func stopAudioKeepAlive() {
+        silentAudioPlayer?.stop()
+        print("BackgroundTimerManager: 音频保活已停止")
+    }
+    
+    // 开始音频会话监控
+    private func startAudioSessionMonitoring() {
+        audioSessionMonitor = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+            self.checkAudioSessionStatus()
+        }
+        print("BackgroundTimerManager: 音频会话监控已启动")
+    }
+    
+    // 检查音频会话状态
+    private func checkAudioSessionStatus() {
+        let audioSession = AVAudioSession.sharedInstance()
+        let isOtherAudioPlaying = audioSession.isOtherAudioPlaying
+        let category = audioSession.category
+        let options = audioSession.categoryOptions
+        
+        print("BackgroundTimerManager: 音频会话状态检查:")
+        print("- 其他音频播放中: \(isOtherAudioPlaying)")
+        print("- 音频类别: \(category.rawValue)")
+        print("- 音频选项: \(options.rawValue)")
+        print("- 音频会话活跃: \(audioSession.isInputAvailable)")
+        
+        // 验证音频保活状态
+        if isTimerRunning {
+            verifyAudioKeepAliveStatus()
+        }
+    }
+    
+    // 验证音频保活状态
+    private func verifyAudioKeepAliveStatus() {
+        guard let player = silentAudioPlayer else {
+            print("BackgroundTimerManager: ⚠️ 静音音频播放器不存在")
+            return
+        }
+        
+        let isPlaying = player.isPlaying
+        let currentTime = player.currentTime
+        let duration = player.duration
+        
+        print("BackgroundTimerManager: 音频保活状态验证:")
+        print("- 播放器状态: \(isPlaying ? "播放中" : "已停止")")
+        print("- 当前播放时间: \(currentTime)")
+        print("- 音频时长: \(duration)")
+        
+        if !isPlaying {
+            print("BackgroundTimerManager: ⚠️ 音频保活可能已失效，尝试重新启动")
+            startAudioKeepAlive()
         }
     }
     

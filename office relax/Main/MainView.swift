@@ -1522,19 +1522,11 @@ struct MainView: View {
             }
             
             // 检查计时是否完成
-            if !status.isRunning && self.remainingSeconds <= 0 && self.isTimerRunning {
+            if self.remainingSeconds <= 0 && self.isTimerRunning {
                 print("MainView: UI检测到计时器完成")
                 self.timer?.invalidate()
                 self.timer = nil
                 self.isTimerRunning = false
-                self.timerCompleted()
-            } else if self.remainingSeconds <= 0 && self.isTimerRunning {
-                // 如果剩余时间为0但计时器还在运行，强制停止
-                print("MainView: 强制停止计时器（剩余时间为0）")
-                self.timer?.invalidate()
-                self.timer = nil
-                self.isTimerRunning = false
-                self.backgroundTimerManager.stopTimer()
                 self.timerCompleted()
             }
         }
@@ -1549,7 +1541,7 @@ struct MainView: View {
     func timerCompleted() {
         print("MainView: 开始处理计时器完成")
         
-        // 防止重复调用 - 但允许从后台恢复时的处理
+        // 防止重复调用
         if !isTimerRunning && remainingSeconds > 0 {
             print("MainView: 计时器已完成且剩余时间大于0，跳过重复调用")
             return
@@ -1558,6 +1550,9 @@ struct MainView: View {
         // 确保计时器状态正确
         isTimerRunning = false
         remainingSeconds = 0
+        
+        // 停止后台计时器
+        backgroundTimerManager.stopTimer()
         
         // 触发震动
         feedbackGenerator.notificationOccurred(.success)

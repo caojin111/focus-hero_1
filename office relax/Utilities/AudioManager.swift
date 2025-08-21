@@ -65,10 +65,119 @@ class AudioManager: ObservableObject {
     // 设置音频会话
     private func setupAudioSession() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            // 设置音频会话为播放模式，支持后台运行
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetooth])
             try AVAudioSession.sharedInstance().setActive(true)
+            
+            // 启用后台音频会话保活
+            setupBackgroundAudioSession()
+            
+            // 立即开始播放静音音频以保持会话活跃
+            startSilentAudioPlayback()
+            
+            print("AudioManager: 音频会话设置成功，已启用后台保活")
         } catch {
             print("无法设置音频会话: \(error.localizedDescription)")
+        }
+    }
+    
+    // 设置后台音频会话保活
+    private func setupBackgroundAudioSession() {
+        do {
+            // 设置音频会话为播放模式，这是iOS允许后台运行的模式
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetooth])
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            // 注册音频会话中断通知
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleAudioSessionInterruption),
+                name: AVAudioSession.interruptionNotification,
+                object: nil
+            )
+            
+            print("AudioManager: 后台音频会话保活已设置")
+        } catch {
+            print("AudioManager: 设置后台音频会话失败: \(error)")
+        }
+    }
+    
+    // 处理音频会话中断
+    @objc private func handleAudioSessionInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        switch type {
+        case .began:
+            print("AudioManager: 音频会话中断开始")
+        case .ended:
+            print("AudioManager: 音频会话中断结束")
+            // 尝试重新激活音频会话
+            do {
+                try AVAudioSession.sharedInstance().setActive(true)
+                print("AudioManager: 音频会话已重新激活")
+            } catch {
+                print("AudioManager: 重新激活音频会话失败: \(error)")
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    // 启用后台保活
+    func enableBackgroundAudio() {
+        print("AudioManager: 启用后台音频保活")
+        setupBackgroundAudioSession()
+    }
+    
+    // 静音音频播放器
+    private var silentAudioPlayer: AVAudioPlayer?
+    
+    // 开始静音音频播放
+    private func startSilentAudioPlayback() {
+        // 创建1秒的静音音频数据
+        let sampleRate: Double = 44100
+        let duration: Double = 1.0
+        let frameCount = Int(sampleRate * duration)
+        
+        var audioData = Data()
+        for _ in 0..<frameCount {
+            // 添加静音样本 (16位，单声道)
+            let sample: Int16 = 0
+            audioData.append(contentsOf: withUnsafeBytes(of: sample.littleEndian) { Data($0) })
+        }
+        
+        do {
+            silentAudioPlayer = try AVAudioPlayer(data: audioData)
+            silentAudioPlayer?.volume = 0.0
+            silentAudioPlayer?.numberOfLoops = -1 // 无限循环
+            silentAudioPlayer?.prepareToPlay()
+            silentAudioPlayer?.play()
+            
+            print("AudioManager: 静音音频播放已启动，音量: 0.0")
+        } catch {
+            print("AudioManager: 创建静音音频播放器失败: \(error)")
+        }
+    }
+    
+    // 停止静音音频播放
+    private func stopSilentAudioPlayback() {
+        silentAudioPlayer?.stop()
+        silentAudioPlayer = nil
+        print("AudioManager: 静音音频播放已停止")
+    }
+    
+    // 禁用后台保活
+    func disableBackgroundAudio() {
+        print("AudioManager: 禁用后台音频保活")
+        stopSilentAudioPlayback()
+        do {
+            try AVAudioSession.sharedInstance().setActive(false)
+        } catch {
+            print("AudioManager: 禁用音频会话失败: \(error)")
         }
     }
     

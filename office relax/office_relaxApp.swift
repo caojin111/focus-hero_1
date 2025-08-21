@@ -89,11 +89,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // 初始化后台计时管理器
         _ = BackgroundTimerManager.shared
         
+        // 检查通知权限
+        BackgroundTimerManager.shared.checkNotificationPermission()
+        
+        // 立即启动音频保活（确保后台权限生效）
+        BackgroundTimerManager.shared.startAudioKeepAlive()
+        
+        // 检查后台配置
+        _ = BackgroundConfigChecker.shared
+        
         // 请求后台刷新权限
         requestBackgroundRefreshPermission()
         
-        // 启用后台获取
-        application.setMinimumBackgroundFetchInterval(UIApplication.backgroundFetchIntervalMinimum)
+        // 启用后台获取（使用新的 BackgroundTasks 框架）
+        // application.setMinimumBackgroundFetchInterval(UIApplication.backgroundFetchIntervalMinimum) // 已废弃
         
         // 立即检查权限状态并打印日志
         print("AppDelegate: 应用启动完成，权限状态检查:")
