@@ -6,14 +6,7 @@
     <true/>
     <key>com.apple.security.files.user-selected.read-only</key>
     <true/>
-    <key>com.apple.developer.background-audio</key>
-    <true/>
-    <key>com.apple.developer.background-modes</key>
-    <array>
-        <string>audio</string>
-        <string>background-processing</string>
-        <string>background-fetch</string>
-        <string>background-app-refresh</string>
-    </array>
+    <!-- 免费开发者账号支持的基本权限 -->
+    <!-- 后台功能通过 Info.plist 中的 UIBackgroundModes 配置 -->
 </dict>
 </plist>
