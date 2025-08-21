@@ -64,14 +64,8 @@
 	<string>Focus Buddy</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>background-processing</string>
-		<string>background-fetch</string>
-		<string>background-app-refresh</string>
 		<string>audio</string>
 	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.focusbuddy.timer</string>
-	</array>
+	<!-- 由于只使用音频后台模式，不需要 BGTaskSchedulerPermittedIdentifiers -->
 </dict>
 </plist>
