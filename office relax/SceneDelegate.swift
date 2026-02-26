@@ -37,10 +37,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         print("应用启动: 场景初始化，已设置强制竖屏")
         
-        // 初始化必要的管理器
-        _ = UserDataManager.shared
-        _ = ShopManager.shared
-        _ = AnimationManager.shared
+        // 延后初始化管理器，避免阻塞首帧导致白屏
+        DispatchQueue.main.async {
+            _ = UserDataManager.shared
+            _ = ShopManager.shared
+            _ = AnimationManager.shared
+        }
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {

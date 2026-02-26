@@ -17,6 +17,9 @@ struct SplashView: View {
     
     var body: some View {
         ZStack {
+            // 先设底色，避免图片未加载时白屏
+            Color(red: 0.95, green: 0.95, blue: 0.97)
+                .ignoresSafeArea()
             // 背景图
             Image("Splash_bg")
                 .resizable()

@@ -14,6 +14,11 @@ import AVFoundation
 class BackgroundTimerManager: ObservableObject {
     static let shared = BackgroundTimerManager()
     
+    /// 是否已注册过 BGTaskScheduler，避免重复注册导致崩溃
+    private static var hasRegisteredBackgroundTasks = false
+    /// 使用 NSRecursiveLock，避免 setupBackgroundTasks 内调用 registerBackgroundTask 时同线程再次加锁死锁
+    private static let registrationLock = NSRecursiveLock()
+    
     // 后台任务标识符
     private let backgroundTaskIdentifier = "com.focusbuddy.timer"
     
@@ -71,28 +76,46 @@ class BackgroundTimerManager: ObservableObject {
     
     // MARK: - 后台任务设置
     private func setupBackgroundTasks() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
-            self.handleBackgroundTask(task as! BGProcessingTask)
+        Self.registrationLock.lock()
+        defer { Self.registrationLock.unlock() }
+        guard !Self.hasRegisteredBackgroundTasks else {
+            print("BackgroundTimerManager: 后台任务已注册过，跳过")
+            return
         }
+        let identifier = backgroundTaskIdentifier
+        if Thread.isMainThread {
+            registerBackgroundTask(identifier: identifier)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.registerBackgroundTask(identifier: identifier)
+            }
+        }
+    }
+    
+    /// 在主线程执行一次 BGTaskScheduler 注册（identifier 必须在 Info.plist BGTaskSchedulerPermittedIdentifiers 中）
+    private func registerBackgroundTask(identifier: String) {
+        Self.registrationLock.lock()
+        defer { Self.registrationLock.unlock() }
+        guard !Self.hasRegisteredBackgroundTasks else { return }
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { [weak self] task in
+            self?.handleBackgroundTask(task as! BGProcessingTask)
+        }
+        Self.hasRegisteredBackgroundTasks = true
         print("BackgroundTimerManager: 后台任务已注册")
     }
     
     private func handleBackgroundTask(_ task: BGProcessingTask) {
         print("BackgroundTimerManager: 开始处理后台任务")
         
-        // 设置任务过期处理
         task.expirationHandler = {
             print("BackgroundTimerManager: 后台任务即将过期")
             self.endBackgroundTask()
         }
         
-        // 执行计时更新
-        updateTimerInBackground()
+        // 只扣除「本段后台时间」，避免与前台每秒 -1 重复扣减
+        applyBackgroundElapsedTime()
         
-        // 安排下次后台任务
         scheduleBackgroundTask()
-        
-        // 标记任务完成
         task.setTaskCompleted(success: true)
         print("BackgroundTimerManager: 后台任务完成")
     }
@@ -239,30 +262,6 @@ class BackgroundTimerManager: ObservableObject {
         }
     }
     
-    // MARK: - 后台计时更新
-    private func updateTimerInBackground() {
-        guard isTimerRunning, let startDate = timerStartDate else {
-            print("BackgroundTimerManager: 计时器未运行，跳过更新")
-            return
-        }
-        
-        let currentDate = Date()
-        let totalElapsedTime = currentDate.timeIntervalSince(startDate)
-        let actualElapsedTime = totalElapsedTime - totalBackgroundTime
-        
-        // 计算应该减少的秒数
-        let secondsToDecrease = Int(actualElapsedTime)
-        
-        if remainingSeconds > secondsToDecrease {
-            remainingSeconds -= secondsToDecrease
-            print("BackgroundTimerManager: 后台更新计时器，剩余时间: \(remainingSeconds)秒")
-        } else {
-            remainingSeconds = 0
-            print("BackgroundTimerManager: 计时器在后台完成")
-            timerCompleted()
-        }
-    }
-    
     // MARK: - 实时计时更新（供UI调用）
     func updateTimerInRealTime() {
         guard isTimerRunning, let startDate = timerStartDate else {
@@ -367,22 +366,47 @@ class BackgroundTimerManager: ObservableObject {
             totalBackgroundTime += timeInBackground
             self.backgroundTime = nil
             
-            // 更新计时器
-            updateTimerInBackground()
-            
-            print("BackgroundTimerManager: 后台时间补偿: \(timeInBackground)秒")
+            // 只扣除后台经过的时间（前台时间已由 updateTimerInRealTime 每秒扣减，不能再用 updateTimerInBackground 按「总前台时间」扣减，否则会重复）
+            let secondsToDecrease = Int(timeInBackground)
+            if remainingSeconds > secondsToDecrease {
+                remainingSeconds -= secondsToDecrease
+                print("BackgroundTimerManager: 后台时间补偿: \(timeInBackground)秒, 剩余: \(remainingSeconds)秒")
+            } else {
+                remainingSeconds = 0
+                print("BackgroundTimerManager: 后台时间补偿后计时器结束: \(timeInBackground)秒")
+                timerCompleted()
+            }
         } else {
-            // 如果没有backgroundTime，可能是从锁屏恢复，尝试从UserDefaults恢复状态
             restoreTimerState()
         }
         
-        // 检查计时器是否已经完成
         if isTimerRunning && remainingSeconds <= 0 {
             print("BackgroundTimerManager: 检测到计时器已完成，发送完成通知")
             isTimerRunning = false
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: NSNotification.Name("TimerCompleted"), object: nil)
             }
+        }
+    }
+    
+    /// 只应用「从进入后台到当前」这段经过的时间到 remainingSeconds（供 BGTask 与恢复逻辑用，避免重复扣减前台时间）
+    private func applyBackgroundElapsedTime() {
+        guard isTimerRunning, let bgTime = backgroundTime else { return }
+        let elapsed = Date().timeIntervalSince(bgTime)
+        let seconds = Int(elapsed)
+        if seconds <= 0 { return }
+        
+        totalBackgroundTime += elapsed
+        self.backgroundTime = Date()
+        
+        if remainingSeconds > seconds {
+            remainingSeconds -= seconds
+            saveTimerState()
+            print("BackgroundTimerManager: BGTask 应用后台时间: \(seconds)秒, 剩余: \(remainingSeconds)秒")
+        } else {
+            remainingSeconds = 0
+            saveTimerState()
+            timerCompleted()
         }
     }
     
@@ -407,22 +431,29 @@ class BackgroundTimerManager: ObservableObject {
         let savedTotalBackgroundTime = defaults.double(forKey: "timer_total_background_time")
         let lastSaveTime = defaults.double(forKey: "timer_last_save_time")
         
-        if wasRunning && savedRemainingSeconds > 0 {
-            print("BackgroundTimerManager: 恢复计时器状态")
-            
-            isTimerRunning = true
-            remainingSeconds = savedRemainingSeconds
-            isWorkMode = savedIsWorkMode
-            timerStartDate = Date(timeIntervalSince1970: savedStartDate)
-            totalBackgroundTime = savedTotalBackgroundTime
-            
-            // 计算从上次保存到现在的时间
-            let timeSinceLastSave = Date().timeIntervalSince1970 - lastSaveTime
-            if timeSinceLastSave > 0 {
-                totalBackgroundTime += timeSinceLastSave
-                updateTimerInBackground()
+        guard wasRunning, savedRemainingSeconds > 0 else { return }
+        
+        print("BackgroundTimerManager: 恢复计时器状态")
+        isTimerRunning = true
+        isWorkMode = savedIsWorkMode
+        timerStartDate = Date(timeIntervalSince1970: savedStartDate)
+        totalBackgroundTime = savedTotalBackgroundTime
+        
+        let timeSinceLastSave = Date().timeIntervalSince1970 - lastSaveTime
+        if timeSinceLastSave > 0 {
+            totalBackgroundTime += timeSinceLastSave
+            let decrease = Int(timeSinceLastSave)
+            if savedRemainingSeconds > decrease {
+                remainingSeconds = savedRemainingSeconds - decrease
+                print("BackgroundTimerManager: 恢复状态 - 离开 \(Int(timeSinceLastSave)) 秒, 剩余: \(remainingSeconds)秒")
+            } else {
+                remainingSeconds = 0
+                print("BackgroundTimerManager: 恢复时已超时，触发完成")
+                timerCompleted()
+                return
             }
-            
+        } else {
+            remainingSeconds = savedRemainingSeconds
             print("BackgroundTimerManager: 恢复状态 - 剩余时间: \(remainingSeconds)秒")
         }
     }
@@ -439,40 +470,47 @@ class BackgroundTimerManager: ObservableObject {
         }
     }
     
-    // 创建静音音频播放器用于保活
+    // 创建静音音频播放器用于保活（在后台线程执行，避免阻塞主线程导致闪屏卡住）
     private func createSilentAudioPlayer() {
-        // 创建一个1秒的静音音频数据
         let sampleRate: Double = 44100
         let duration: Double = 1.0
         let frameCount = Int(sampleRate * duration)
         
-        var audioData = Data()
-        for _ in 0..<frameCount {
-            // 添加静音样本 (16位，单声道)
-            let sample: Int16 = 0
-            audioData.append(contentsOf: withUnsafeBytes(of: sample.littleEndian) { Data($0) })
-        }
-        
-        do {
-            silentAudioPlayer = try AVAudioPlayer(data: audioData)
-            silentAudioPlayer?.volume = 0.0
-            silentAudioPlayer?.numberOfLoops = -1 // 无限循环
-            silentAudioPlayer?.prepareToPlay()
-            print("BackgroundTimerManager: 静音音频播放器已创建")
-        } catch {
-            print("BackgroundTimerManager: 创建静音音频播放器失败: \(error)")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            var audioData = Data()
+            audioData.reserveCapacity(frameCount * 2)
+            for _ in 0..<frameCount {
+                let sample: Int16 = 0
+                audioData.append(contentsOf: withUnsafeBytes(of: sample.littleEndian) { Data($0) })
+            }
+            
+            do {
+                let player = try AVAudioPlayer(data: audioData)
+                player.volume = 0.0
+                player.numberOfLoops = -1
+                player.prepareToPlay()
+                DispatchQueue.main.async {
+                    self?.silentAudioPlayer = player
+                    print("BackgroundTimerManager: 静音音频播放器已创建")
+                    self?.silentAudioPlayer?.play()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    print("BackgroundTimerManager: 创建静音音频播放器失败: \(error)")
+                }
+            }
         }
     }
     
     func startAudioKeepAlive() {
         if silentAudioPlayer == nil {
             createSilentAudioPlayer()
+        } else {
+            silentAudioPlayer?.play()
         }
         
-        silentAudioPlayer?.play()
         print("BackgroundTimerManager: 音频保活已启动")
         
-        // 确保音频会话保持活跃
         do {
             try AVAudioSession.sharedInstance().setActive(true)
             print("BackgroundTimerManager: 音频会话已重新激活")

@@ -694,7 +694,7 @@
 				CODE_SIGN_ENTITLEMENTS = "office relax/office_relax.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.3.0;
+				CURRENT_PROJECT_VERSION = 1.4.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = FKKYF3QVJ4;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -717,7 +717,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relax";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -741,7 +741,7 @@
 				CODE_SIGN_ENTITLEMENTS = "office relax/office_relax.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.3.0;
+				CURRENT_PROJECT_VERSION = 1.4.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = FKKYF3QVJ4;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -764,7 +764,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = "Lazycat.office-relax";
 				PRODUCT_NAME = "$(TARGET_NAME)";
